@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iPhone Manager</title>
+  <link rel="stylesheet" href="/static/style.css?v=6">
+  <script src="/static/i18n.js?v=6"></script>
+  <script src="/static/lang/pt.js?v=6"></script>
+  <script src="/static/lang/pt.app.js?v=6"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="22" height="22"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg>
+      <span>iPhone Manager</span>
+    </div>
+
+    <div class="device-hero" id="hero" hidden>
+      <div class="phone"><div class="phone-screen" id="hero-screen"><span class="phone-time" id="hero-time"></span></div><div class="phone-island"></div></div>
+      <div class="hero-name" id="hero-name"></div>
+      <div class="hero-sub" id="hero-sub"></div>
+    </div>
+
+    <div class="side-head">
+      <span>Devices</span>
+      <button class="icon-btn" id="btn-refresh" title="Look for devices (including Wi-Fi)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <ul id="device-list" class="device-list"></ul>
+    <p class="hint" id="device-hint" data-i18n>Connect the iPhone over USB and tap <b>Trust</b>.</p>
+
+    <nav class="nav" id="nav" hidden>
+      <button data-view="overview" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Overview</button>
+      <button data-view="photos"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>Photos &amp; videos</button>
+      <button data-view="apps"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Apps</button>
+      <button data-view="files"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Files</button>
+      <button data-view="screen"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>Screen &amp; control</button>
+      <button data-view="update"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Update iOS</button>
+    </nav>
+
+    <label class="lang-pick" title="Language">
+      <svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9s1.2-6.4 3.7-9z"/></svg>
+      <select id="lang"></select>
+    </label>
+  </aside>
+
+  <main>
+    <section id="view-empty" class="view empty-state">
+      <svg viewBox="0 0 24 24" width="64" height="64"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="18.5" r=".8" fill="currentColor"/></svg>
+      <h2>No iPhone selected</h2>
+      <p>Connect it with a USB cable, or over Wi-Fi if you have already turned on wireless access for this computer.</p>
+    </section>
+
+    <!-- Overview -->
+    <section id="view-overview" class="view" hidden>
+      <div class="tiles">
+        <button class="tile-btn" data-go="photos"><span class="ti" style="--c1:#ffcc4d;--c2:#ff7a59"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg></span>Photos</button>
+        <button class="tile-btn" data-go="apps"><span class="ti" style="--c1:#5ac8fa;--c2:#007aff"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>Apps</button>
+        <button class="tile-btn" data-go="files"><span class="ti" style="--c1:#64d2ff;--c2:#0a84ff"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>Files</button>
+        <button class="tile-btn" data-go="screen"><span class="ti" style="--c1:#bf5af2;--c2:#5e5ce6"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg></span>Screen</button>
+        <button class="tile-btn" data-go="update"><span class="ti" style="--c1:#8e8e93;--c2:#3a3a3c"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1M4.9 19.1 7 17m10-10 2.1-2.1"/></svg></span>Update iOS</button>
+      </div>
+
+      <div class="ov-grid">
+        <div class="card2 ov-info">
+          <div class="card-head"><span>Device information</span><button class="link" id="ov-showall">Show all</button></div>
+          <dl class="info-list" id="ov-info"></dl>
+        </div>
+        <div class="card2 ov-actions">
+          <div class="card-head"><span>Quick actions</span></div>
+          <div class="actions">
+            <button class="action" data-go="update"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Update iOS</button>
+            <button class="action" data-go="screen"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>View and control the screen</button>
+            <button class="action" data-go="apps"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Manage apps</button>
+            <button class="action" data-go="photos"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>Export photos and videos</button>
+            <button class="action" data-go="files"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Find large files</button>
+            <button class="action" id="ov-recovery"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>Enter Recovery mode</button>
+            <button class="action" id="ov-dfu"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5" fill="currentColor" fill-opacity=".15"/><path d="M12 8v5"/></svg>Enter DFU mode…</button>
+            <label class="action switch-row" title="Lets you reach this iPhone without a cable on the same network. Turn it on with the cable connected.">
+              <svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></svg>
+              <span class="grow">Wi-Fi connection</span>
+              <span class="switch"><input type="checkbox" id="ov-wifi"><span></span></span>
+            </label>
+          </div>
+        </div>
+        <div class="card2 ov-storage">
+          <div class="card-head"><span>Storage</span><span class="head-val" id="ov-disk"></span></div>
+          <div class="seg-bar" id="ov-storage-bar"></div>
+          <div class="legend" id="ov-storage-legend"></div>
+        </div>
+        <div class="card2 ov-battery">
+          <div class="card-head"><span>Battery</span><span class="head-val" id="ov-charging"></span></div>
+          <div class="battery-row">
+            <span class="battery-pct" id="ov-battery"></span>
+            <span class="battery"><span class="battery-fill" id="ov-battery-fill"></span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Device in Recovery / DFU / Restore -->
+    <section id="view-mode" class="view" hidden>
+      <header class="view-head"><h1 id="md-name">—</h1><span class="pill mode" id="md-state"></span></header>
+      <div class="notice" id="md-notice"></div>
+      <div class="panel">
+        <div class="row gap" id="md-actions">
+          <button class="btn primary" id="md-exit-recovery">Exit Recovery (restart into iOS)</button>
+          <button class="btn" id="md-enter-dfu">Enter DFU…</button>
+          <button class="btn primary" id="md-exit-dfu">Exit DFU…</button>
+        </div>
+        <dl class="kv">
+          <dt>Model</dt><dd id="md-model"></dd>
+          <dt>Serial number</dt><dd id="md-serial"></dd>
+          <dt>ECID</dt><dd id="md-ecid"></dd>
+          <dt>Chip / board</dt><dd id="md-board"></dd>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Photos -->
+    <section id="view-photos" class="view photos-view" hidden>
+     <div class="ph-layout">
+      <aside class="ph-side" id="ph-side"><div class="muted small">Reading the library…</div></aside>
+      <div class="ph-main">
+      <header class="view-head">
+        <h1 id="ph-title">All photos</h1>
+        <span class="muted" id="ph-count"></span>
+        <div class="spacer"></div>
+        <div class="seg" id="ph-filter">
+          <button data-f="all" class="active">All</button>
+          <button data-f="image">Photos</button>
+          <button data-f="video">Videos</button>
+        </div>
+        <label class="inline">Sort
+          <select id="ph-sort">
+            <option value="date-desc">Date (newest)</option>
+            <option value="date-asc">Date (oldest)</option>
+            <option value="size-desc">Size (largest)</option>
+            <option value="size-asc">Size (smallest)</option>
+          </select>
+        </label>
+        <label class="inline">Group
+          <select id="ph-group">
+            <option value="month">By month</option>
+            <option value="day">By day</option>
+            <option value="year">By year</option>
+            <option value="none">No groups</option>
+          </select>
+        </label>
+        <button class="btn ghost" id="ph-rescan" title="Read the library again">Reload</button>
+        <button class="btn ic-btn" id="ic-btn" title="View, download and delete what is only in iCloud">☁ Connect iCloud</button>
+      </header>
+
+      <div class="toolbar" id="ph-toolbar">
+        <span id="ph-selinfo">No items selected</span>
+        <button class="btn ghost" id="ph-selall">Select all</button>
+        <button class="btn ghost" id="ph-selnone" hidden>Clear selection</button>
+        <div class="spacer"></div>
+        <button class="btn danger" id="ph-delete" hidden>Delete</button>
+        <button class="btn primary" id="ph-export" disabled>Download selected</button>
+        <button class="btn" id="ph-export-all">Download all</button>
+      </div>
+
+      <div id="ph-album-info" class="status" hidden></div>
+      <div id="ph-status" class="status"></div>
+      <div id="ph-grid" class="grid-wrap"></div>
+      <div id="ph-sentinel"></div>
+      </div>
+     </div>
+    </section>
+
+    <!-- Apps -->
+    <section id="view-apps" class="view" hidden>
+      <header class="view-head">
+        <h1>Apps</h1>
+        <span class="muted" id="ap-count"></span>
+        <div class="spacer"></div>
+        <input type="text" id="ap-search" placeholder="Search apps…">
+        <label class="inline">Sort
+          <select id="ap-sort">
+            <option value="name-asc">Name</option>
+            <option value="total-desc">Total size (largest)</option>
+            <option value="data-desc">Data (largest)</option>
+            <option value="app-desc">App (largest)</option>
+            <option value="total-asc">Total size (smallest)</option>
+          </select>
+        </label>
+        <button class="btn ghost" id="ap-refresh">Reload</button>
+      </header>
+      <p class="muted small" data-i18n>Apps with <b>files</b> share their Documents folder with the computer: you can view, download,
+        upload and delete files. The others only show their size (Apple doesn't give access to their data).</p>
+      <div id="ap-status" class="status"></div>
+      <table class="tbl" id="ap-table">
+        <thead><tr><th></th><th>App</th><th>Version</th><th class="num">App</th><th class="num">Data</th><th class="num">Total</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Files -->
+    <section id="view-files" class="view" hidden>
+      <header class="view-head">
+        <h1>Files</h1>
+        <select id="fs-root" title="Where to browse"></select>
+        <div class="spacer"></div>
+        <div class="seg" id="fs-mode">
+          <button data-m="browse" class="active" title="Browse the folders">Folders</button>
+          <button data-m="flat" title="Every file in this folder and its subfolders, without the folders">All files</button>
+        </div>
+      </header>
+      <div class="crumbs" id="fs-crumbs"></div>
+      <div class="toolbar">
+        <input type="text" id="fs-search" placeholder="Filter by name…">
+        <label class="inline">Sort
+          <select id="fs-sort">
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+            <option value="size-desc">Size (largest)</option>
+            <option value="size-asc">Size (smallest)</option>
+            <option value="date-desc">Date (newest)</option>
+            <option value="date-asc">Date (oldest)</option>
+            <option value="type-asc">Type</option>
+          </select>
+        </label>
+        <label class="inline">Group
+          <select id="fs-group">
+            <option value="none">No groups</option>
+            <option value="type">By type</option>
+            <option value="day">By day</option>
+            <option value="month">By month</option>
+            <option value="year">By year</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <span class="muted" id="fs-selinfo"></span>
+        <button class="btn" id="fs-download" disabled>Download</button>
+        <button class="btn danger" id="fs-delete" disabled>Delete</button>
+        <button class="btn" id="fs-mkdir">New folder</button>
+        <label class="btn" id="fs-upload-btn">Upload files<input type="file" id="fs-upload" multiple hidden></label>
+        <button class="btn ghost" id="fs-refresh">Refresh</button>
+      </div>
+      <div id="fs-status" class="status"></div>
+      <table class="tbl" id="fs-table">
+        <thead><tr><th class="ck"><input type="checkbox" id="fs-all" title="Select all"></th><th>Name</th><th class="path-col">Folder</th><th class="num">Size</th><th>Modified</th><th>Type</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn ghost" id="fs-more" hidden>Show more</button>
+    </section>
+
+    <!-- Screen -->
+    <section id="view-screen" class="view" hidden>
+      <header class="view-head">
+        <h1>iPhone screen</h1>
+        <span class="muted" id="sc-fps"></span>
+        <div class="spacer"></div>
+        <label class="inline" id="sc-control-wrap" hidden><input type="checkbox" id="sc-control" checked> Control with mouse and keyboard</label>
+        <button class="btn" id="sc-save" hidden>Save image</button>
+        <button class="btn" id="sc-stop" hidden title="Ends mirroring and frees the iPhone">Stop</button>
+      </header>
+      <div class="panel" id="sc-setup" hidden>
+        <div id="sc-msg"></div>
+        <div class="row gap" style="margin-top:12px"><button class="btn primary" id="sc-prepare" hidden>Turn on screen viewing</button></div>
+      </div>
+      <div class="screen-layout" id="sc-wrap" hidden>
+        <div class="screen-wrap"><img id="sc-img" alt="iPhone screen" draggable="false"></div>
+        <div class="screen-side">
+          <div class="panel">
+            <h3>Buttons</h3>
+            <div class="hw-buttons">
+              <button class="btn" data-hw="home">Home</button>
+              <button class="btn" data-hw="lock">Lock</button>
+              <button class="btn" data-hw="volume-up">Volume +</button>
+              <button class="btn" data-hw="volume-down">Volume −</button>
+              <button class="btn" data-hw="siri">Siri</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Send text</h3>
+            <textarea id="sc-text" rows="3" placeholder="Text to type on the iPhone (no accents)"></textarea>
+            <div class="row gap" style="margin-top:8px"><button class="btn" id="sc-send-text">Type on iPhone</button></div>
+          </div>
+          <p class="muted small">Click = tap; click and drag = swipe. With the mouse over the screen, the PC keyboard
+            types on the iPhone (Enter, Backspace, arrows…). Accented letters don't go through the keyboard: the
+            iPhone receives a US keyboard.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Update -->
+    <section id="view-update" class="view" hidden>
+      <header class="view-head"><h1>Update iOS</h1></header>
+      <div class="notice" data-i18n>
+        <b>Update, not restore.</b> Your data, apps and photos are kept. Only versions Apple still signs that are
+        the same as or newer than the current one (<span id="up-current"></span>) can be installed.
+        Back up first, and keep the cable connected and the computer on throughout.
+      </div>
+
+      <div class="panel">
+        <h3 data-i18n>Versions signed by Apple for <span id="up-ptype"></span></h3>
+        <div id="up-list" class="fw-list"><div class="muted">Checking…</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Or pick an IPSW file on this computer</h3>
+        <div class="row gap">
+          <input type="text" id="up-path" placeholder="C:\...\iPhone_..._Restore.ipsw" class="grow">
+          <button class="btn" id="up-browse">Browse…</button>
+          <button class="btn" id="up-check">Check</button>
+        </div>
+        <div id="up-inspect" class="inspect"></div>
+      </div>
+
+      <div class="panel" id="up-run" hidden>
+        <h3>Progress</h3>
+        <div class="bar big"><div id="up-bar"></div></div>
+        <div class="muted" id="up-progress-text"></div>
+        <pre id="up-log" class="log"></pre>
+        <div class="row gap"><div class="spacer"></div><button class="btn danger" id="up-cancel">Cancel</button></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" hidden>
+    <button class="lb-close" id="lb-close" aria-label="Close">✕</button>
+    <button class="lb-nav prev" id="lb-prev" aria-label="Previous">‹</button>
+    <div class="lb-body" id="lb-body"></div>
+    <button class="lb-nav next" id="lb-next" aria-label="Next">›</button>
+    <div class="lb-foot"><span id="lb-name"></span><button class="btn" id="lb-download">Download</button>
+      <button class="btn lb-danger" id="lb-delete" hidden>Delete from iCloud</button></div>
+  </div>
+
+  <!-- Export dialog -->
+  <dialog id="dlg-export">
+    <form method="dialog">
+      <h3 data-i18n>Download <span id="ex-count"></span></h3>
+      <label>Destination folder</label>
+      <div class="row gap"><input type="text" id="ex-dest" class="grow"><button type="button" class="btn" id="ex-browse">Browse…</button></div>
+      <label class="check"><input type="checkbox" id="ex-month" checked> Organize into folders by month (YYYY-MM)</label>
+      <label class="check"><input type="checkbox" id="ex-heic"> Convert HEIC to JPG</label>
+      <label class="check"><input type="checkbox" id="ex-live" checked> Include the Live Photo videos (.MOV)</label>
+      <p class="muted">Files already in the destination with the same size are skipped.</p>
+      <menu><button value="cancel" class="btn ghost">Cancel</button><button value="ok" id="ex-ok" class="btn primary">Download</button></menu>
+    </form>
+  </dialog>
+
+  <!-- Confirm update dialog -->
+  <dialog id="dlg-update">
+    <form method="dialog">
+      <h3 data-i18n>Update to iOS <span id="cu-version"></span>?</h3>
+      <p>The iPhone will restart a few times. Don't unplug the cable until it's done. Your data is kept
+        (update mode, nothing is erased).</p>
+      <p class="muted" id="cu-path"></p>
+      <ul class="checks" id="cu-checks"></ul>
+      <menu><button type="button" class="btn ghost" id="cu-recheck" hidden>Check again</button>
+        <button value="cancel" class="btn ghost">Cancel</button><button value="ok" class="btn primary" id="cu-go" disabled>Update now</button></menu>
+    </form>
+  </dialog>
+
+  <!-- Confirm recovery dialog -->
+  <dialog id="dlg-recovery">
+    <form method="dialog">
+      <h3>Enter Recovery mode?</h3>
+      <p>The iPhone will restart and show the "connect to computer" screen. No data is erased. To go back to iOS,
+        use "Exit Recovery" here in the app.</p>
+      <menu><button value="cancel" class="btn ghost">Cancel</button><button value="ok" class="btn primary">Restart into Recovery</button></menu>
+    </form>
+  </dialog>
+
+  <!-- DFU guide -->
+  <dialog id="dlg-dfu">
+    <form method="dialog">
+      <h3 id="dfu-title"></h3>
+      <p class="muted" id="dfu-intro"></p>
+      <ol class="steps" id="dfu-steps"></ol>
+      <div class="dfu-status" id="dfu-status"></div>
+      <menu><button value="cancel" class="btn ghost" id="dfu-close">Close</button><button type="button" class="btn primary" id="dfu-start">Start</button></menu>
+    </form>
+  </dialog>
+
+  <!-- iCloud sign-in -->
+  <dialog id="dlg-icloud">
+    <form method="dialog" autocomplete="on">
+      <h3>iCloud Photos</h3>
+      <div id="ic-step-login">
+        <p class="muted small">To view, download and delete what is only in iCloud. Your password goes straight to Apple and
+          isn't stored: after the verification code, this computer becomes trusted and the app reconnects by itself.
+          Doesn't work with iCloud Advanced Data Protection turned on.</p>
+        <label>Apple ID</label>
+        <input type="text" id="ic-id" autocomplete="username" class="wide">
+        <label>Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="ic-pass" autocomplete="current-password" class="wide">
+          <button type="button" class="eye" id="ic-eye" title="Show password" aria-label="Show password">
+            <svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <menu><button value="cancel" class="btn ghost">Cancel</button><button type="button" class="btn primary" id="ic-login">Sign in</button></menu>
+      </div>
+      <div id="ic-step-code" hidden>
+        <p>Enter the 6-digit code shown on your Apple devices.</p>
+        <input type="text" id="ic-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="wide code">
+        <menu><button value="cancel" class="btn ghost">Cancel</button><button type="button" class="btn primary" id="ic-verify">Verify</button></menu>
+      </div>
+      <div id="ic-step-ok" hidden>
+        <p data-i18n>Signed in as <b id="ic-account"></b>.</p>
+        <menu><button type="button" class="btn ghost" id="ic-logout">Sign out</button><button value="cancel" class="btn primary">Close</button></menu>
+      </div>
+      <p class="ic-msg" id="ic-err"></p>
+    </form>
+  </dialog>
+
+  <!-- Confirmation for destructive actions (the browser's confirm() can be silenced by the user) -->
+  <dialog id="dlg-ask">
+    <form method="dialog">
+      <h3 id="ask-title"></h3>
+      <div id="ask-body" class="ask-body"></div>
+      <menu><button value="cancel" class="btn ghost">Cancel</button><button value="ok" class="btn primary" id="ask-ok"></button></menu>
+    </form>
+  </dialog>
+
+  <!-- Transfer tray -->
+  <div id="tray" class="tray" hidden></div>
+
+  <script>
+    translateDom();
+    const langSel = document.getElementById("lang");
+    for (const [code, name] of Object.entries(LANGS)) langSel.add(new Option(name, code, false, code === LANG));
+    langSel.onchange = () => setLang(langSel.value);
+  </script>
+  <script src="/static/app.js?v=6"></script>
+</body>
+</html>

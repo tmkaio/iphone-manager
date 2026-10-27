@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build outputs (installer/build.ps1)
+build/
+dist/
+installer/Output/
+*.spec
+
+# Secrets / local config
+.env
+.env.*
+*.pem
+*.key
+
+# Runtime data, firmware and logs
+*.ipsw
+*.log
+logs/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Local scratch
+rea/
+.claude/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

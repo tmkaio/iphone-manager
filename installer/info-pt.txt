@@ -1,0 +1,17 @@
+﻿iPhone Manager - requisitos
+===========================
+
+Antes de usar o iPhone Manager, instale UM destes programas, que trazem o driver e
+o serviço "Apple Mobile Device Support" da Apple (não incluídos neste app):
+
+  * Apple Devices (Microsoft Store), ou
+  * iTunes para Windows, ou
+  * iMazing
+
+Opcional: ffmpeg/ffprobe no PATH ativa a pré-visualização de alguns vídeos.
+
+Depois conecte o iPhone pelo cabo USB, desbloqueie e toque em "Confiar neste computador".
+
+O iPhone Manager roda um servidor local em http://127.0.0.1:8765 e o abre numa
+janela do Microsoft Edge. É software livre sob a GNU GPL v3 ou posterior.
+Este programa não é afiliado nem endossado pela Apple Inc.
