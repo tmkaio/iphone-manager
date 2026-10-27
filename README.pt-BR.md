@@ -1,6 +1,6 @@
 # iPhone Manager
 
-**Um gerenciador de iPhone gratuito e de código aberto para Windows.** Veja e exporte suas fotos (inclusive o
+**Um gerenciador de iPhone gratuito e de código aberto para Windows, macOS e Linux.** Veja e exporte suas fotos (inclusive o
 que está só no iCloud), gerencie apps e arquivos, veja e controle a tela do iPhone pelo PC e atualize o iOS
 sem apagar nada, tudo num app local no navegador.
 
@@ -21,7 +21,7 @@ sem apagar nada, tudo num app local no navegador.
 - **Exportar:** baixa a seleção ou tudo, organizado por mês, com conversão HEIC→JPG e os vídeos das Live
   Photos se quiser.
 - **Pré-visualização de vídeos:** os vídeos HEVC do iPhone tocam com imagem, convertidos na hora pelo ffmpeg.
-- **Apagar fotos:** o próprio iPhone apaga, como no app Fotos do Windows.
+- **Apagar fotos:** o próprio iPhone apaga, como no app Fotos do Windows (por enquanto só no Windows).
 - **Apps:** todos os apps com ícone, versão e tamanho (app e dados). Remover apps e acessar os Documentos dos
   apps que compartilham arquivos.
 - **Arquivos:** navega a partição de mídia e os Documentos dos apps. O modo "Todos os arquivos" acha os
@@ -38,6 +38,8 @@ Mais imagens no [README em inglês](README.md#features).
 
 ## Instalação
 
+### Windows
+
 1. Baixe o **`iPhoneManager-Setup-<versão>.exe`** em
    [Releases](https://github.com/tmkaio/iphone-manager/releases) e execute. Ele instala só para o seu usuário,
    sem precisar de administrador.
@@ -51,6 +53,31 @@ Mais imagens no [README em inglês](README.md#features).
 
 > O instalador ainda não é assinado, então o Windows SmartScreen pode avisar: clique em **Mais informações ›
 > Executar assim mesmo**.
+
+### macOS (novo, beta)
+
+1. Baixe o **`iPhoneManager-<versão>-macOS-arm64.dmg`** em
+   [Releases](https://github.com/tmkaio/iphone-manager/releases). Funciona em Macs com chip Apple (M1 em
+   diante); Macs com Intel não são suportados.
+2. Abra e arraste o **iPhone Manager** para **Aplicativos**.
+3. Abra pelo Aplicativos, conecte o iPhone pelo cabo, desbloqueie e toque em **Confiar**.
+
+O macOS já tem o serviço da Apple para o iPhone, então não há mais nada para instalar. O app não fica no Dock:
+a janela abre no Google Chrome, Microsoft Edge, Brave ou Chromium (modo app), se algum estiver instalado, ou no
+navegador padrão. Abrir o app de novo mostra a janela de novo. Para ver vídeos, instale o ffmpeg pelo
+[Homebrew](https://brew.sh): `brew install ffmpeg`.
+
+### Linux (novo, beta)
+
+1. Instale o usbmuxd (serviço do iPhone) da sua distribuição, por exemplo `sudo apt install usbmuxd`.
+2. Baixe o **`iPhoneManager-<versão>-x86_64.AppImage`** (ou `aarch64`) em
+   [Releases](https://github.com/tmkaio/iphone-manager/releases), torne-o executável e rode:
+   `chmod +x iPhoneManager-*.AppImage && ./iPhoneManager-*.AppImage`
+3. Conecte o iPhone pelo cabo, desbloqueie e toque em **Confiar**.
+
+Para ver vídeos, instale o ffmpeg (`sudo apt install ffmpeg`). O modo Recovery e a atualização do iOS falam
+com o iPhone direto pela USB; se o seu usuário não tiver acesso, crie uma regra udev como
+`SUBSYSTEM=="usb", ATTR{idVendor}=="05ac", MODE="0666"` em `/etc/udev/rules.d/39-iphone.rules`.
 
 ## Como usar
 

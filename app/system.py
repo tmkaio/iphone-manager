@@ -1,11 +1,15 @@
 """What differs between Windows, macOS and Linux: where the app keeps its data, showing a folder,
 the native folder/file pickers and the libusb library pyusb loads."""
 
+import ctypes.util
+import importlib.util
 import os
+import platform
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 IS_WINDOWS = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
@@ -76,22 +80,41 @@ def pick(kind: str, title: str, filter_name: str = "") -> str:
         root.destroy()
 
 
+def _bundled_libusb() -> Optional[Path]:
+    """libusb-1.0 shipped in the `libusb` package, found without importing it (importing it loads
+    the library, which fails where it is too new for the system's glibc)."""
+    spec = importlib.util.find_spec("libusb")
+    if not spec or not spec.submodule_search_locations:
+        return None
+    machine = platform.machine().lower()
+    arch = {"amd64": "x86_64", "arm64": "arm64" if IS_MAC else "aarch64"}.get(machine, machine)
+    name = "macos" if IS_MAC else "linux"
+    lib = "libusb-1.0.dylib" if IS_MAC else "libusb-1.0.so"
+    path = Path(spec.submodule_search_locations[0]) / "_platform" / name / arch / lib
+    return path if path.is_file() else None
+
+
 def use_bundled_libusb() -> None:
-    """Make pyusb load the libusb that comes with the `libusb` package (macOS and Linux don't ship
-    one where ctypes looks, and a signed macOS app ignores DYLD_* variables)."""
+    """Point pyusb at a libusb it can load: on Linux the system's (any distro with usbmuxd has it),
+    else the one in the `libusb` package; macOS has none where ctypes looks, and a signed app
+    ignores DYLD_* variables."""
     if IS_WINDOWS:
         return
     try:
-        from libusb._platform import DLL_PATH
         import usb.backend.libusb1 as libusb1
     except Exception:
         return
-    if getattr(libusb1.get_backend, "_bundled", False) or not Path(DLL_PATH).is_file():
+    if getattr(libusb1.get_backend, "_bundled", False):
+        return
+    if not IS_MAC and ctypes.util.find_library("usb-1.0"):
+        return  # pyusb finds it by itself
+    path = _bundled_libusb()
+    if path is None:
         return
     original = libusb1.get_backend
 
     def get_backend(find_library=None):
-        return original(find_library=find_library or (lambda _name: str(DLL_PATH)))
+        return original(find_library=find_library or (lambda _name: str(path)))
 
     get_backend._bundled = True
     libusb1.get_backend = get_backend

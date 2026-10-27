@@ -1,6 +1,6 @@
 # iPhone Manager
 
-**A free, open-source iPhone manager for Windows.** Browse and export your photos (including what's only in
+**A free, open-source iPhone manager for Windows, macOS and Linux.** Browse and export your photos (including what's only in
 iCloud), manage apps and files, see and control the iPhone's screen from the PC, and update iOS without
 erasing anything, all from a local app in your browser.
 
@@ -20,7 +20,7 @@ English · [Português (Brasil)](README.pt-BR.md)
 | **iCloud Photos** | Sign in with your Apple ID to view, play, download and delete items that are only in iCloud ("Optimize iPhone Storage"). |
 | **Export** | Download a selection or everything, organized by month, with optional HEIC→JPG conversion and Live Photo videos. Files already downloaded are skipped. |
 | **Video preview** | Plays iPhone HEVC videos (which Windows browsers can't decode) by converting them on the fly with ffmpeg, with seeking. |
-| **Delete photos** | Deletes from the iPhone the same way the Windows Photos app does: the iPhone itself removes them, so the library stays consistent. |
+| **Delete photos** | Deletes from the iPhone the same way the Windows Photos app does: the iPhone itself removes them, so the library stays consistent (Windows only for now). |
 | **Apps** | Every installed app with icon, version, app and data size. Uninstall apps; browse, upload and download the Documents of apps that share files. |
 | **Files** | Browse the iPhone's media partition and app Documents. "All files" mode flattens a folder tree to find the largest files. Upload, download, new folder, delete. |
 | **Backups** | Full iPhone backups in the iTunes/Finder format (incremental, optionally encrypted) that you can restore after a recovery or a failed update. Back up and restore **one app's data**, **Messages**, **Contacts**, call history, Notes, Calendar or Safari bookmarks on their own, without touching anything else. |
@@ -45,6 +45,8 @@ English · [Português (Brasil)](README.pt-BR.md)
 
 ## Install
 
+### Windows
+
 1. Download **`iPhoneManager-Setup-<version>.exe`** from the
    [Releases](https://github.com/tmkaio/iphone-manager/releases) page and run it. It installs for your user only
    (no administrator rights) and adds a Start menu shortcut.
@@ -64,10 +66,36 @@ your own computer.
 
 > The installer isn't code-signed yet, so Windows SmartScreen may warn about it: choose **More info › Run anyway**.
 
+### macOS (new, beta)
+
+1. Download **`iPhoneManager-<version>-macOS-arm64.dmg`** from
+   [Releases](https://github.com/tmkaio/iphone-manager/releases). It runs on Macs with Apple silicon (M1 and
+   later); Intel Macs aren't supported.
+2. Open it and drag **iPhone Manager** to **Applications**.
+3. Open it from Applications, connect the iPhone with a USB cable, unlock it and tap **Trust**.
+
+macOS has Apple's iPhone service built in, so there is nothing else to install. The app has no Dock icon:
+it opens its window in Google Chrome, Microsoft Edge, Brave or Chromium (app mode) if one is installed,
+otherwise in your default browser. Opening the app again shows the window again. For video previews,
+install ffmpeg with [Homebrew](https://brew.sh): `brew install ffmpeg`.
+
+### Linux (new, beta)
+
+1. Install usbmuxd (Apple's iPhone service) from your distribution, e.g. `sudo apt install usbmuxd`.
+2. Download **`iPhoneManager-<version>-x86_64.AppImage`** (or `aarch64`) from
+   [Releases](https://github.com/tmkaio/iphone-manager/releases), make it executable and run it:
+   `chmod +x iPhoneManager-*.AppImage && ./iPhoneManager-*.AppImage`
+3. Connect the iPhone with a USB cable, unlock it and tap **Trust**.
+
+For video previews install ffmpeg (`sudo apt install ffmpeg`). Recovery mode and iOS updates talk to the
+iPhone over USB directly; if your user can't open it, add a udev rule such as
+`SUBSYSTEM=="usb", ATTR{idVendor}=="05ac", MODE="0666"` in `/etc/udev/rules.d/39-iphone.rules`.
+
 ## Requirements
 
-- Windows 10 or 11 (64-bit).
-- Apple Mobile Device service (Apple Devices, iTunes or iMazing). Setup installs Apple Devices if needed.
+- Windows 10 or 11 (64-bit), macOS 11 or later on Apple silicon, or a Linux with glibc 2.35+ (Ubuntu 22.04, Debian 12, Fedora 36…).
+- Apple's iPhone service: on Windows Apple Devices, iTunes or iMazing (Setup installs Apple Devices if
+  needed); built into macOS; the `usbmuxd` package on Linux.
 - An iPhone or iPad. Most features work on any recent iOS. Screen mirroring needs iOS 17 or later with
   **Developer Mode** turned on (Settings › Privacy & Security › Developer Mode).
 - Optional: ffmpeg for video previews. Setup installs it; from source, put it on `PATH`.
@@ -128,7 +156,9 @@ mirroring need the cable.
 iPhone Manager is a small [FastAPI](https://fastapi.tiangolo.com) server on `127.0.0.1` plus a plain HTML/JS
 interface (`app/static`). It talks to the device with
 [pymobiledevice3](https://github.com/doronz88/pymobiledevice3) through Apple's usbmuxd service
-(`AppleMobileDeviceProcess.exe`, port 27015).
+(`AppleMobileDeviceProcess.exe`, port 27015, on Windows; `/var/run/usbmuxd` on macOS and Linux).
+`app/system.py` holds what differs between the three systems; Recovery and DFU go through Apple's
+`MobileDevice.dll` on Windows (`app/modes.py`) and libusb elsewhere (`app/modes_usb.py`).
 
 | Module | What it does |
 |---|---|
@@ -177,11 +207,17 @@ The first command downloads free stock photos into `build/demo-assets`. The seco
 http://127.0.0.1:8790. Every action pretends to succeed and nothing touches a device.
 `scripts/screenshots.py` regenerates the screenshots in `docs/screenshots` from it with headless Edge.
 
-### Building the installer
+### Building the installers
 See [`installer/`](installer/). `installer/build.ps1` builds the self-contained app folder and, with
-[Inno Setup 6.5 or newer](https://jrsoftware.org/isinfo.php), the setup `.exe`. Pushing a tag such as `v1.0.0` runs
-[the release workflow](.github/workflows/release.yml), which builds the installer on GitHub Actions and
-attaches it to a GitHub Release.
+[Inno Setup 6.5 or newer](https://jrsoftware.org/isinfo.php), the setup `.exe`. `installer/build-unix.sh` builds
+the macOS `.dmg` or the Linux AppImage on that system (it needs [uv](https://docs.astral.sh/uv/)). Pushing a tag
+such as `v1.0.0` runs [the release workflow](.github/workflows/release.yml), which builds all of them on GitHub
+Actions and attaches them to a GitHub Release.
+
+The macOS app is signed with a Developer ID and notarized when the repository has these secrets:
+`MACOS_CERT_P12` (the *Developer ID Application* certificate as a base64 `.p12`), `MACOS_CERT_PASSWORD`,
+`APPLE_API_KEY_P8` (an App Store Connect API key), `APPLE_API_KEY_ID` and `APPLE_API_ISSUER_ID`. Without
+them it is signed ad hoc, and macOS asks to allow it in **System Settings › Privacy & Security**.
 
 ### Translations
 Strings are written in English in the code (`t("…")` in JavaScript, `_("…")` in Python). Each language is a
@@ -195,7 +231,8 @@ Missing entries fall back to English. Placeholders like `{n}` must be kept.
 
 ## Limitations
 
-- Windows only (it relies on Apple's Windows driver and `MobileDevice.dll`, and on the Windows Shell for deletion).
+- Deleting photos from the iPhone works on Windows only for now (it goes through the Windows Shell's PTP support).
+- The macOS and Linux versions are new and haven't been tested with as many iPhones as the Windows one.
 - Apple doesn't let computers browse most apps' data. Only apps with *File Sharing* expose their Documents
   folder, and the Files app's *On My iPhone* folders aren't reachable. App data can still be backed up and
   restored as a whole (Backups).

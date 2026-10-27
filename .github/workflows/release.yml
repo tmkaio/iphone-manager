@@ -64,8 +64,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-15        # Apple silicon
-          - runner: macos-15-intel
+          # Apple silicon only: cryptography (pymobiledevice3) no longer ships Intel Mac wheels
+          - runner: macos-15
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
@@ -128,7 +128,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Build the AppImage
-        run: bash installer/build-unix.sh
+        run: |
+          sudo apt-get install -y --no-install-recommends libusb-1.0-0
+          bash installer/build-unix.sh
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4

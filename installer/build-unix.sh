@@ -45,9 +45,11 @@ mkdir -p "$APPDIR"
 # ---------- Python ----------
 uv python install "$PY_VERSION"
 BASE_PY="$(uv python find --managed-python "$PY_VERSION")"
-BASE_DIR="$(cd "$(dirname "$BASE_PY")/.." && pwd)"
-echo "Python: $BASE_PY ($("$BASE_PY" --version))"
-cp -R "$BASE_DIR" "$PYDIR"
+# -P: uv links cpython-3.13-<platform> to the patch-version folder; copy the real one
+BASE_DIR="$(cd "$(dirname "$BASE_PY")/.." && pwd -P)"
+echo "Python: $BASE_DIR ($("$BASE_PY" --version))"
+mkdir -p "$PYDIR"
+cp -R "$BASE_DIR/." "$PYDIR/"
 PY="$PYDIR/bin/python3"
 PYVER="$("$PY" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')"
 STDLIB="$PYDIR/lib/python$PYVER"
@@ -80,13 +82,13 @@ cp "$ROOT/run.py" "$ROOT/LICENSE" "$ROOT/README.md" "$APPDIR/"
 import importlib, sys
 mods = ["app.server", "app.mirror", "app.mount_ddi", "app.restore_runner", "app.modes_usb",
         "pymobiledevice3.__main__", "pymobiledevice3.cli.restore", "pymobiledevice3.restore.recovery",
-        "pyicloud", "pillow_heif", "av", "libusb", "usb.core", "uvicorn", "httptools", "websockets"]
+        "pyicloud", "pillow_heif", "av", "usb.core", "uvicorn", "httptools", "websockets"]
 for m in mods:
     importlib.import_module(m)
 from app import system
 system.use_bundled_libusb()
 import usb.core
-usb.core.find(find_all=True)  # loads the bundled libusb
+usb.core.find(find_all=True)  # loads libusb (the bundled one on macOS)
 print("imports ok:", len(mods), "modules; python", sys.version.split()[0])
 ')
 
