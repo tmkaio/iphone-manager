@@ -1,16 +1,17 @@
 """Playable previews of iPhone videos.
 
 iPhone videos are HEVC (often 4K/60 HDR); Edge/Chrome on Windows play their audio but not their
-picture. ffmpeg (on PATH) converts them on the fly to H.264 720p/30 fragmented MP4, read from the
-app's own /file endpoint (which supports Range, so seeking with -ss before -i is quick). Hardware
-decoding (QSV/D3D11) rejects the iPhone's 10-bit HDR HEVC here, so decoding is on the CPU; the
-Intel encoder is tried first, then libx264.
+picture. ffmpeg (the installer's copy in <app>/ffmpeg, else the one on PATH) converts them on the
+fly to H.264 720p/30 fragmented MP4, read from the app's own /file endpoint (which supports Range,
+so seeking with -ss before -i is quick). Hardware decoding (QSV/D3D11) rejects the iPhone's 10-bit
+HDR HEVC here, so decoding is on the CPU; the Intel encoder is tried first, then libx264.
 """
 
 import asyncio
 import json
 import logging
 import shutil
+from pathlib import Path
 from typing import AsyncIterator, Awaitable, Callable, Optional
 from urllib.parse import quote
 
@@ -26,8 +27,18 @@ ENCODERS = [
 _encoder: Optional[list[str]] = None  # the first one that worked
 
 
+# installer/iphone-manager.iss extracts the ffmpeg build to <app>/ffmpeg/<build name>/bin
+BUNDLED = Path(__file__).resolve().parent.parent / "ffmpeg"
+
+
+def _exe(name: str) -> Optional[str]:
+    for exe in sorted(BUNDLED.glob(f"*/bin/{name}.exe"), reverse=True):
+        return str(exe)
+    return shutil.which(name)
+
+
 def available() -> bool:
-    return shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
+    return _exe("ffmpeg") is not None and _exe("ffprobe") is not None
 
 
 def _source(base: str, udid: str, path: str) -> str:
@@ -40,7 +51,7 @@ async def probe(base: str, udid: str, path: str) -> dict:
 
 async def probe_url(url: str) -> dict:
     proc = await asyncio.create_subprocess_exec(
-        "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+        _exe("ffprobe") or "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
         "stream=codec_name,width,height:format=duration", "-of", "json", url,
         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
     out, _err = await asyncio.wait_for(proc.communicate(), 30)
@@ -64,7 +75,7 @@ async def stream_url(url: str, start: float = 0,
     otherwise convert the rest of a 40-minute 4K video for nobody."""
     global _encoder
     for encoder in ([_encoder] if _encoder else ENCODERS):
-        args = ["ffmpeg", "-hide_banner", "-v", "error"]
+        args = [_exe("ffmpeg") or "ffmpeg", "-hide_banner", "-v", "error"]
         if start > 0:
             args += ["-ss", f"{start:.2f}"]
         args += ["-i", url, "-map", "0:v:0", "-map", "0:a:0?",

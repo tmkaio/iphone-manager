@@ -6,7 +6,13 @@ packages below. The installer ships `THIRD-PARTY-NOTICES.txt` with the full lice
 generated at build time by `installer/gen_notices.py` from the installed packages' metadata.
 
 The `av` (PyAV) wheel bundles FFmpeg libraries under the LGPL-2.1-or-later.
-Apple's Mobile Device Support and ffmpeg/ffprobe executables are **not** bundled.
+Apple's Mobile Device Support and the ffmpeg/ffprobe executables are **not** bundled. When their
+components are selected, setup downloads them from their official sources at install time:
+
+- ffmpeg: the "essentials" Windows build by [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
+  ([GPL-3.0](https://www.ffmpeg.org/legal.html); source at [ffmpeg.org](https://ffmpeg.org/download.html)),
+  checked against a pinned SHA-256.
+- Apple Devices, from the Microsoft Store through `winget`, under Apple's own license terms.
 
 | Package | Version | License |
 |---|---|---|

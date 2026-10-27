@@ -39,10 +39,12 @@ jobs:
       - name: Ensure Inno Setup
         shell: pwsh
         run: |
+          # 6.5+ for the [Files] download/extractarchive flags (ffmpeg); the runner image may ship an older one
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            choco install innosetup -y --no-progress
-            if ($LASTEXITCODE -ne 0) { throw "choco install innosetup failed" }
+          $ok = (Test-Path $iscc) -and ([version](Get-Item $iscc).VersionInfo.ProductVersion -ge [version]"6.5")
+          if (-not $ok) {
+            choco upgrade innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "choco upgrade innosetup failed" }
           }
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found after install" }
           "ISCC=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8

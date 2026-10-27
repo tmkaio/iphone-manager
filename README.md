@@ -42,18 +42,19 @@ English · [Português (Brasil)](README.pt-BR.md)
 
 ## Install
 
-1. Install Apple's device driver and service, from **one** of:
-   - the **Apple Devices** app (Microsoft Store), or iTunes; or
-   - [iMazing](https://imazing.com) (its free download includes them).
-
-   iPhone Manager doesn't ship Apple's software. It uses the service those apps install (see
-   [How it works](#how-it-works)).
-2. Download **`iPhoneManager-Setup-<version>.exe`** from the
+1. Download **`iPhoneManager-Setup-<version>.exe`** from the
    [Releases](https://github.com/tmkaio/iphone-manager/releases) page and run it. It installs for your user only
    (no administrator rights) and adds a Start menu shortcut.
-3. Optional, for video previews: install [ffmpeg](https://ffmpeg.org), for example with
-   `winget install Gyan.FFmpeg`.
-4. Connect the iPhone with a USB cable, unlock it and tap **Trust**.
+2. On the **Select Components** page everything is selected by default. Untick what you don't want:
+   - **ffmpeg**: plays iPhone videos inside the app. Setup downloads an official Windows build
+     ([gyan.dev](https://www.gyan.dev/ffmpeg/builds/), about 115 MB) and checks its SHA-256.
+   - **Apple Devices** (Microsoft Store): Apple's driver and service for talking to the iPhone. Setup installs
+     it with `winget`, and Windows may ask for permission. This item only shows up when the driver is missing.
+     iTunes and [iMazing](https://imazing.com) also bring it.
+
+   iPhone Manager doesn't ship Apple's software or ffmpeg inside the installer. Setup fetches them from their
+   official sources (see [How it works](#how-it-works)).
+3. Connect the iPhone with a USB cable, unlock it and tap **Trust**.
 
 The app opens in its own window (Microsoft Edge in app mode) at `http://127.0.0.1:8765`. It only listens on
 your own computer.
@@ -63,10 +64,10 @@ your own computer.
 ## Requirements
 
 - Windows 10 or 11 (64-bit).
-- Apple Mobile Device service (Apple Devices, iTunes or iMazing).
+- Apple Mobile Device service (Apple Devices, iTunes or iMazing). Setup installs Apple Devices if needed.
 - An iPhone or iPad. Most features work on any recent iOS. Screen mirroring needs iOS 17 or later with
   **Developer Mode** turned on (Settings › Privacy & Security › Developer Mode).
-- Optional: ffmpeg on `PATH` for video previews.
+- Optional: ffmpeg for video previews. Setup installs it; from source, put it on `PATH`.
 
 ## Using it
 
@@ -158,7 +159,7 @@ http://127.0.0.1:8790. Every action pretends to succeed and nothing touches a de
 
 ### Building the installer
 See [`installer/`](installer/). `installer/build.ps1` builds the self-contained app folder and, with
-[Inno Setup 6](https://jrsoftware.org/isinfo.php), the setup `.exe`. Pushing a tag such as `v1.0.0` runs
+[Inno Setup 6.5 or newer](https://jrsoftware.org/isinfo.php), the setup `.exe`. Pushing a tag such as `v1.0.0` runs
 [the release workflow](.github/workflows/release.yml), which builds the installer on GitHub Actions and
 attaches it to a GitHub Release.
 

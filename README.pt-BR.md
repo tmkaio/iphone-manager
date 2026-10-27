@@ -37,13 +37,16 @@ Mais imagens no [README em inglês](README.md#features).
 
 ## Instalação
 
-1. Instale o driver e o serviço da Apple, por **um** destes: o app **Apple Devices** (Microsoft Store), o
-   iTunes ou o [iMazing](https://imazing.com).
-2. Baixe o **`iPhoneManager-Setup-<versão>.exe`** em
+1. Baixe o **`iPhoneManager-Setup-<versão>.exe`** em
    [Releases](https://github.com/tmkaio/iphone-manager/releases) e execute. Ele instala só para o seu usuário,
    sem precisar de administrador.
-3. Opcional, para ver vídeos: instale o [ffmpeg](https://ffmpeg.org) (`winget install Gyan.FFmpeg`).
-4. Conecte o iPhone pelo cabo, desbloqueie e toque em **Confiar**.
+2. Na página **Selecionar componentes** tudo vem marcado. Desmarque o que não quiser:
+   - **ffmpeg**: reproduz os vídeos do iPhone dentro do app. O instalador baixa uma versão oficial para Windows
+     ([gyan.dev](https://www.gyan.dev/ffmpeg/builds/), cerca de 115 MB) e confere o SHA-256.
+   - **Apple Devices** (Microsoft Store): driver e serviço da Apple para falar com o iPhone. O instalador o
+     instala pelo `winget`, e o Windows pode pedir permissão. Só aparece quando o driver não está instalado;
+     o iTunes e o [iMazing](https://imazing.com) também o trazem.
+3. Conecte o iPhone pelo cabo, desbloqueie e toque em **Confiar**.
 
 > O instalador ainda não é assinado, então o Windows SmartScreen pode avisar: clique em **Mais informações ›
 > Executar assim mesmo**.

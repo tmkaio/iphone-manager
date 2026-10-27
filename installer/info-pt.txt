@@ -1,17 +1,22 @@
-﻿iPhone Manager - requisitos
-===========================
+﻿iPhone Manager - o que será instalado
+=====================================
 
-Antes de usar o iPhone Manager, instale UM destes programas, que trazem o driver e
-o serviço "Apple Mobile Device Support" da Apple (não incluídos neste app):
+Nas próximas páginas você escolhe o que instalar. Tudo vem marcado:
 
-  * Apple Devices (Microsoft Store), ou
-  * iTunes para Windows, ou
-  * iMazing
+  * O próprio iPhone Manager (obrigatório).
 
-Opcional: ffmpeg/ffprobe no PATH ativa a pré-visualização de alguns vídeos.
+  * ffmpeg - reproduz os vídeos do iPhone (HEVC) dentro do app. Baixado durante
+    a instalação das versões oficiais para Windows (gyan.dev, cerca de 115 MB).
+
+  * Apple Devices - app gratuito da Apple na Microsoft Store. Traz o driver e o
+    serviço "Apple Mobile Device" que todo programa de iPhone no Windows precisa.
+    Instalado pelo winget; o Windows pode pedir permissão. Este item só aparece
+    quando o driver não está instalado (iTunes, Apple Devices ou iMazing já o
+    trazem).
 
 Depois conecte o iPhone pelo cabo USB, desbloqueie e toque em "Confiar neste computador".
 
 O iPhone Manager roda um servidor local em http://127.0.0.1:8765 e o abre numa
 janela do Microsoft Edge. É software livre sob a GNU GPL v3 ou posterior.
+O ffmpeg é licenciado pela GPL; o Apple Devices, pelos termos da Apple.
 Este programa não é afiliado nem endossado pela Apple Inc.
