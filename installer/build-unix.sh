@@ -69,6 +69,9 @@ SITE="$STDLIB/site-packages"
 rm -rf "$SITE/jedi/third_party"   # ~25 MB of type stubs, only for IPython's completion
 # console-script launchers point at this build machine's path
 find "$PYDIR/bin" -type f ! -name "python*" -delete
+# links left dangling by the trimming above (codesign --strict rejects them), and any absolute link
+find "$PYDIR" -type l ! -exec test -e {} \; -print -delete
+find "$PYDIR" -type l -lname "/*" -print -delete
 
 # ---------- app ----------
 cp -R "$ROOT/app" "$APPDIR/app"
@@ -149,7 +152,7 @@ if [ "$OS" = "Darwin" ]; then
     if file -b "$f" | grep -q "Mach-O"; then "${SIGN[@]}" "$f"; fi
   done < <(find "$RES" -type f -print0)
   "${SIGN[@]}" "$APP"
-  codesign --verify --deep --strict "$APP"
+  codesign --verify --deep --strict --verbose=2 "$APP"
   echo "signed with: $IDENTITY"
 
   # ---------- .dmg ----------
