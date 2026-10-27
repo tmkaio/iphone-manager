@@ -1,6 +1,6 @@
 """iPhone backups in the iTunes/Finder format (mobilebackup2), and partial backups made from them.
 
-Layout of the backup folder (Settings: LOCALAPPDATA/iPhoneManager/Backups by default):
+Layout of the backup folder (Settings: <app data>/Backups by default, see system.DATA_DIR):
 
     <root>/<udid>/                         the device's full backup, updated incrementally like iTunes
     <root>/Snapshots/<id>/snapshot.json    a partial backup: one app's data, Messages, Contacts...
@@ -36,13 +36,14 @@ from pymobiledevice3.services.mobilebackup2 import (
     NP_SYNC_CANCEL_REQUEST, BackupSelection,
 )
 
+from . import system
 from .device import DeviceManager
 from .i18n import _
 from .tasks import spawn
 
 log = logging.getLogger(__name__)
 
-DATA_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "iPhoneManager"
+DATA_DIR = system.DATA_DIR
 SETTINGS = DATA_DIR / "settings.json"
 METADATA = ("Info.plist", "Manifest.plist", "Status.plist")
 # <root>/.state/<udid>.json: {"complete": bool}. Status.plist can't tell: it's written before the backup

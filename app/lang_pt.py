@@ -281,4 +281,15 @@ PT: dict[str, str] = {
         "Calendário",
     "Safari bookmarks":
         "Favoritos do Safari",
+    # macOS / Linux
+    "libusb isn't available: {error}":
+        "libusb não está disponível: {error}",
+    "Couldn't leave Recovery: {error}":
+        "Não foi possível sair do Recovery: {error}",
+    "The Apple Mobile Device service (usbmuxd) isn't answering. Restart the Mac.":
+        "O serviço de dispositivos móveis da Apple (usbmuxd) não está respondendo. Reinicie o Mac.",
+    "usbmuxd isn't running. Install it (for example: sudo apt install usbmuxd), then plug the iPhone in again.":
+        "O usbmuxd não está rodando. Instale-o (por exemplo: sudo apt install usbmuxd) e conecte o iPhone de novo.",
+    "Deleting photos from the iPhone is only available on Windows for now.":
+        "Apagar fotos do iPhone por enquanto só funciona no Windows.",
 }

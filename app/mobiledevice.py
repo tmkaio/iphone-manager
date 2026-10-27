@@ -6,23 +6,26 @@ serves the standard usbmuxd protocol on 127.0.0.1:27015, which pymobiledevice3 u
 
 If Apple Devices/iTunes is installed, its Windows service already provides the port and we
 don't start anything.
+
+macOS has usbmuxd built in, and on Linux it is the `usbmuxd` package: there is nothing to start,
+only the socket to check (/var/run/usbmuxd).
 """
 
-import ctypes
 import logging
 import os
 import socket
 import subprocess
 import time
-import winreg
 from pathlib import Path
 from typing import Optional
 
 from .i18n import _
+from .system import IS_MAC, IS_WINDOWS
 
 log = logging.getLogger(__name__)
 
 USBMUXD_ADDRESS = ("127.0.0.1", 27015)
+USBMUXD_SOCKET = "/var/run/usbmuxd"
 PROCESS_NAME = "AppleMobileDeviceProcess.exe"
 
 CANDIDATES = [
@@ -43,6 +46,11 @@ ENUM_USB = r"SYSTEM\CurrentControlSet\Enum\USB"
 
 def is_running() -> bool:
     try:
+        if not IS_WINDOWS:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+                s.settimeout(0.5)
+                s.connect(USBMUXD_SOCKET)
+                return True
         with socket.create_connection(USBMUXD_ADDRESS, timeout=0.5):
             return True
     except OSError:
@@ -65,6 +73,16 @@ def ensure_running() -> Optional[str]:
             _service_seen_at = time.time()
         return None
     _service_seen_at = None
+    if IS_MAC:
+        return _("The Apple Mobile Device service (usbmuxd) isn't answering. Restart the Mac.")
+    if not IS_WINDOWS:
+        # udev starts usbmuxd when an iPhone is plugged in, and it exits when none is left
+        if any(Path(d, "usbmuxd").is_file() for d in ("/usr/sbin", "/usr/bin", "/usr/local/sbin", "/sbin")):
+            return None
+        return _(
+            "usbmuxd isn't running. Install it (for example: sudo apt install usbmuxd), "
+            "then plug the iPhone in again."
+        )
     if _proc is not None and _proc.poll() is None:
         return None  # still starting
     exe = find_executable()

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=iPhone Manager
+Comment=Photos, files, apps, backups and iOS updates for your iPhone
+Exec=AppRun
+Icon=iphone-manager
+Categories=Utility;
+Terminal=false

@@ -19,7 +19,9 @@ const state = {
   photosLoadedFor: null,
   jobs: new Map(),  // id -> job (photo export + ipsw downloads)
   updateLogLen: 0,
+  canDeletePhotos: true,  // from /api/defaults: deleting photos goes through Windows (PTP)
 };
+const IS_MAC = /Mac/.test(navigator.platform);
 
 async function api(path, opts = {}) {
   const init = { ...opts };
@@ -811,9 +813,9 @@ function updateSelection() {
   $$("#ph-grid .tile").forEach((tile) => tile.classList.toggle("sel", state.selected.has(state.filtered[tile.dataset.idx].path)));
   const n = state.selected.size;
   const bytes = state.items.filter((i) => state.selected.has(i.path)).reduce((a, i) => a + itemBytes(i), 0);
-  $("#ph-selinfo").textContent = n ? t("{n} selected · {size}", { n, size: fmtBytes(bytes) }) : t("Ctrl+click or click the circle to select");
+  $("#ph-selinfo").textContent = n ? t("{n} selected · {size}", { n, size: fmtBytes(bytes) }) : (IS_MAC ? t("⌘-click or click the circle to select") : t("Ctrl+click or click the circle to select"));
   $("#ph-export").disabled = !n;
-  $("#ph-delete").hidden = !n;
+  $("#ph-delete").hidden = !n || !state.canDeletePhotos;
   $("#ph-selnone").hidden = !n;
   $("#ph-grid").classList.toggle("selecting", n > 0);
 }
@@ -1157,13 +1159,13 @@ async function exportDialog(paths) {
   if (!$("#ex-dest").value) {
     const d = await api("/api/defaults");
     const name = (current()?.name || "iPhone").replace(/[\\/:*?"<>|]/g, "_");
-    $("#ex-dest").value = `${d.photos_dest}\\${name}`;
+    $("#ex-dest").value = `${d.photos_dest}${d.sep}${name}`;
   }
   $("#dlg-export").showModal();
 }
 $("#ex-browse").onclick = async () => {
   const r = await api("/api/pick/folder", { method: "POST" });
-  if (r.path) $("#ex-dest").value = r.path.replaceAll("/", "\\");
+  if (r.path) $("#ex-dest").value = r.path;
 };
 $("#dlg-export").onclose = async () => {
   if ($("#dlg-export").returnValue !== "ok") return;
@@ -2143,7 +2145,7 @@ function renderFwProgress() {
 
 $("#up-browse").onclick = async () => {
   const r = await api("/api/pick/ipsw", { method: "POST" });
-  if (r.path) { $("#up-path").value = r.path.replaceAll("/", "\\"); $("#up-check").click(); }
+  if (r.path) { $("#up-path").value = r.path; $("#up-check").click(); }
 };
 $("#up-check").onclick = async () => {
   const box = $("#up-inspect");
@@ -2298,6 +2300,7 @@ function opLabel(op) {
 /* ---------------- boot ---------------- */
 
 $("#btn-refresh").onclick = () => refreshDevices(true);
+api("/api/defaults").then((d) => { state.canDeletePhotos = d.can_delete_photos; }).catch(() => {});
 refreshDevices(true);
 pollUpdate();  // an update may already be running (e.g. after reloading the page)
 setInterval(() => { if (!document.hidden) refreshDevices(false); }, 4000);

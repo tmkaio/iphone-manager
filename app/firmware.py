@@ -15,14 +15,14 @@ from typing import Any, Callable, Optional
 
 import requests
 
-from . import i18n
+from . import i18n, system
 from .i18n import _
 from .tasks import spawn
 
 log = logging.getLogger(__name__)
 
 IPSW_API = "https://api.ipsw.me/v4/device/{identifier}?type=ipsw"
-IPSW_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "iPhoneManager" / "ipsw"
+IPSW_DIR = system.DATA_DIR / "ipsw"
 LOG_DIR = IPSW_DIR.parent / "logs"
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 

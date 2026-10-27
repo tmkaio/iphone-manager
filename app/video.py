@@ -1,7 +1,8 @@
 """Playable previews of iPhone videos.
 
 iPhone videos are HEVC (often 4K/60 HDR); Edge/Chrome on Windows play their audio but not their
-picture. ffmpeg (the installer's copy in <app>/ffmpeg, else the one on PATH) converts them on the
+picture. ffmpeg (the installer's copy in <app>/ffmpeg, else the one on PATH or from Homebrew, which
+apps opened from the macOS Finder don't have on their PATH) converts them on the
 fly to H.264 720p/30 fragmented MP4, read from the app's own /file endpoint (which supports Range,
 so seeking with -ss before -i is quick). Hardware decoding (QSV/D3D11) rejects the iPhone's 10-bit
 HDR HEVC here, so decoding is on the CPU; the Intel encoder is tried first, then libx264.
@@ -31,10 +32,19 @@ _encoder: Optional[list[str]] = None  # the first one that worked
 BUNDLED = Path(__file__).resolve().parent.parent / "ffmpeg"
 
 
+EXTRA_DIRS = ["/opt/homebrew/bin", "/usr/local/bin"]
+
+
 def _exe(name: str) -> Optional[str]:
     for exe in sorted(BUNDLED.glob(f"*/bin/{name}.exe"), reverse=True):
         return str(exe)
-    return shutil.which(name)
+    found = shutil.which(name)
+    if found:
+        return found
+    for folder in EXTRA_DIRS:
+        if (Path(folder) / name).is_file():
+            return str(Path(folder) / name)
+    return None
 
 
 def available() -> bool:

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -10,6 +11,8 @@ from pymobiledevice3.lockdown import LockdownClient, create_using_usbmux, get_mo
 from pymobiledevice3.services.afc import AfcService
 
 from .i18n import _
+from .mobiledevice import USBMUXD_SOCKET
+from .system import IS_WINDOWS
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +54,9 @@ class DeviceManager:
                         devids[mux.serial] = mux.devid
             except Exception as e:  # usbmuxd not running
                 log.warning("usbmux unavailable: %s", e)
-                self.usbmux_error = _("The Apple Mobile Device service is still starting, wait a few seconds.")
+                # on Linux usbmuxd only runs while an iPhone is plugged in: no socket = no iPhone
+                idle = not IS_WINDOWS and not os.path.exists(USBMUXD_SOCKET)
+                self.usbmux_error = None if idle else _("The Apple Mobile Device service is still starting, wait a few seconds.")
             else:
                 self.usbmux_error = None
 

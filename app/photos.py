@@ -14,6 +14,7 @@ from typing import Any, AsyncIterator, Optional
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
+from . import system
 from .tasks import spawn
 from .device import DeviceManager
 
@@ -26,7 +27,7 @@ SIDECAR_EXT = {".aae", ".xmp"}
 CHUNK = 1024 * 1024
 THUMB_SIZE = 320
 
-CACHE_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "iPhoneManager" / "cache"
+CACHE_DIR = system.DATA_DIR / "cache"
 
 
 def media_kind(name: str) -> Optional[str]:

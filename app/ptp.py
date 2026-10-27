@@ -13,6 +13,7 @@ asks first). Windows only; the iPhone must be unlocked and trust this PC.
 
 import logging
 import posixpath
+import sys
 import time
 from datetime import datetime
 from typing import Any, Optional
@@ -102,6 +103,8 @@ def _pick(candidates: list[tuple[str, list]], when: float) -> Optional[list]:
 def delete(items: list[dict[str, Any]]) -> dict[str, Any]:
     """items: [{path, name, time, extra: [names of companion files, e.g. a Live Photo's .MOV]}].
     Returns {deleted: [paths], not_found: [paths], ambiguous: [paths]}."""
+    if sys.platform != "win32":
+        raise PtpError(_("Deleting photos from the iPhone is only available on Windows for now."))
     pythoncom = _com()
     from win32com.shell import shell, shellcon
 

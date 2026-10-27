@@ -402,4 +402,7 @@ Object.assign((I18N.pt ||= {}), {
     "{what} de {date} ({size}) é apagado deste computador. O iPhone não é alterado.",
   "{what} goes back to how it was on {date}; what changed in it since then is lost. Everything else stays as it is now: the iPhone is backed up first, then restored with only this part replaced. Turn off Find My first and keep the cable connected; the iPhone restarts at the end.":
     "{what} volta a ficar como estava em {date}; o que mudou nele desde então se perde. Todo o resto fica como está agora: primeiro é feito um backup do iPhone, depois ele é restaurado trocando só essa parte. Desligue o Buscar antes e mantenha o cabo conectado; o iPhone reinicia no final.",
+  // macOS
+  "⌘-click or click the circle to select":
+    "Clique com ⌘ ou na bolinha para selecionar",
 });

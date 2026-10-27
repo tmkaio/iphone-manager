@@ -18,9 +18,7 @@ iPhone Manager is free software, licensed under the GNU General Public License v
 (see LICENSE). It is distributed together with the components listed below, each under its own
 license. The full license texts shipped by each package follow the summary.
 
-Bundled runtime: the official CPython "embeddable package" for Windows (Python Software Foundation
-License; see python/LICENSE.txt), plus the Tcl/Tk libraries used by tkinter (Tcl/Tk license,
-reproduced at the end of this file).
+{runtime}
 
 Note: the "av" (PyAV) wheel bundles FFmpeg libraries licensed under the LGPL-2.1-or-later; FFmpeg
 source code is available at https://ffmpeg.org/download.html and PyAV's build scripts at
@@ -29,6 +27,14 @@ https://github.com/PyAV-Org/pyav.
 Not included and not distributed: Apple Mobile Device Support / MobileDevice.dll (installed by
 Apple Devices, iTunes or iMazing) and ffmpeg/ffprobe executables (optional, looked up on PATH).
 """
+
+WINDOWS_RUNTIME = """Bundled runtime: the official CPython "embeddable package" for Windows (Python Software Foundation
+License; see python/LICENSE.txt), plus the Tcl/Tk libraries used by tkinter (Tcl/Tk license,
+reproduced at the end of this file)."""
+
+STANDALONE_RUNTIME = """Bundled runtime: CPython from python-build-standalone (https://github.com/astral-sh/python-build-standalone;
+Python Software Foundation License, see python/lib/python3.*/LICENSE.txt, which also lists the licenses
+of the libraries it is built with, such as OpenSSL, SQLite, zlib and Tcl/Tk)."""
 
 LICENSE_CLASSIFIER = "License :: "
 
@@ -64,6 +70,7 @@ def main() -> None:
     ap.add_argument("site_packages", type=Path)
     ap.add_argument("output", type=Path)
     ap.add_argument("--summary", type=Path, help="also write a Markdown summary table")
+    ap.add_argument("--standalone", action="store_true", help="the macOS/Linux builds (python-build-standalone)")
     args = ap.parse_args()
 
     rows = []
@@ -88,7 +95,7 @@ def main() -> None:
                 lic = f"{first} (from {files[0].name})"
         rows.append((name, version, lic, url, files))
 
-    out = [HEADER, "", "Summary", "-------", ""]
+    out = [HEADER.format(runtime=STANDALONE_RUNTIME if args.standalone else WINDOWS_RUNTIME), "", "Summary", "-------", ""]
     width = max(len(r[0]) for r in rows)
     for name, version, lic, url, _ in rows:
         out.append(f"{name.ljust(width)}  {version:<14}  {lic}" + (f"  <{url}>" if url else ""))

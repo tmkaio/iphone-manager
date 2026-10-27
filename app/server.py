@@ -5,7 +5,6 @@ import logging
 import mimetypes
 import os
 import re
-import subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -32,7 +31,8 @@ log = logging.getLogger(__name__)
 
 from . import mobiledevice
 from .modes import ModeError, ModeWatcher, model_name
-from . import i18n, preflight, ptp, video, watchdog
+from .modes_usb import ModeWatcher as UsbModeWatcher
+from . import i18n, preflight, ptp, system, video, watchdog
 from .i18n import _
 
 devices = DeviceManager()
@@ -42,7 +42,8 @@ files = FileBrowser(devices)
 screen = ScreenMirror(devices)
 icloud = ICloudPhotos()
 firmware = FirmwareManager()
-modes = ModeWatcher()
+# Windows: Apple's MobileDevice.dll (its driver owns Recovery/DFU devices); elsewhere libusb
+modes = ModeWatcher() if system.IS_WINDOWS else UsbModeWatcher()
 
 
 def _update_running() -> Optional[str]:
@@ -123,7 +124,7 @@ async def set_wifi(udid: str, body: WifiBody):
     return {"ok": True}
 
 
-# ---------------- Recovery / DFU (MobileDevice.dll) ----------------
+# ---------------- Recovery / DFU (MobileDevice.dll on Windows, libusb elsewhere) ----------------
 
 
 @app.get("/api/modes")
@@ -831,20 +832,11 @@ async def backup_folder(body: FolderBody):
 
 
 def _dialog(kind: str) -> str:
-    import tkinter as tk
-    from tkinter import filedialog
-
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    try:
-        if kind == "folder":
-            return filedialog.askdirectory(title=_("Choose the destination folder")) or ""
-        return filedialog.askopenfilename(
-            title=_("Choose the IPSW file"), filetypes=[(_("iOS firmware"), "*.ipsw"), (_("All files"), "*.*")]
-        ) or ""
-    finally:
-        root.destroy()
+    if kind == "folder":
+        path = system.pick("folder", _("Choose the destination folder"))
+    else:
+        path = system.pick("ipsw", _("Choose the IPSW file"), _("iOS firmware"))
+    return str(Path(path)) if path else ""  # Tk gives "/" on Windows too
 
 
 @app.post("/api/pick/{kind}")
@@ -856,7 +848,8 @@ async def pick(kind: str):
 
 @app.get("/api/defaults")
 async def defaults():
-    return {"photos_dest": str(Path.home() / "Pictures" / "iPhone")}
+    return {"photos_dest": str(Path.home() / "Pictures" / "iPhone"), "sep": os.sep,
+            "can_delete_photos": system.IS_WINDOWS}
 
 
 class OpenBody(BaseModel):
@@ -866,7 +859,7 @@ class OpenBody(BaseModel):
 @app.post("/api/open-folder")
 async def open_folder(body: OpenBody):
     if Path(body.path).is_dir():
-        subprocess.Popen(["explorer", body.path])
+        system.open_folder(body.path)
     return {"ok": True}
 
 

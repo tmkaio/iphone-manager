@@ -1,0 +1,5 @@
+#!/bin/sh
+# AppImage entry point. The server runs in this process (not detached): the AppImage stays mounted
+# only while it runs. Opening the app again while it runs only shows the window.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/python/bin/python3" -s "$HERE/usr/app/run.py" "$@"
