@@ -429,6 +429,69 @@ async def firmwares(udid: str):
             "firmwares": [fw("26.0.1", "23A355", "2026-10-14"), fw("26.0", "23A341", "2026-09-15", True)]}
 
 
+DEMO_JOBS: dict[str, dict] = {}
+
+
+def _backups() -> dict:
+    now = time.time()
+    day = 86400
+
+    def snap(i: int, kind: str, name: str, days: float, files: int, size: int, **extra: Any) -> dict:
+        return {"id": f"demo-{i}", "kind": kind, "name": name, "udid": UDID, "date": now - days * day,
+                "device_name": "Demo iPhone", "ios": "26.0", "product_type": "iPhone16,2", "encrypted": True,
+                "files": files, "size": size, "path": rf"C:\Users\Demo\Backups\Snapshots\demo-{i}", **extra}
+    return {
+        "root": r"C:\Users\Demo\Backups", "free": 412_000_000_000, "job": None,
+        "full": [
+            {"udid": UDID, "name": "Demo iPhone", "product_type": "iPhone16,2", "ios": "26.0", "date": now - 0.2 * day,
+             "encrypted": True, "complete": True, "size": 61_300_000_000, "path": rf"C:\Users\Demo\Backups\{UDID}"},
+            {"udid": "00000000-OLD0000OLD0000", "name": "Old iPhone", "product_type": "iPhone14,2", "ios": "18.6",
+             "date": now - 210 * day, "encrypted": False, "complete": True, "size": 38_900_000_000,
+             "path": r"C:\Users\Demo\Backups\00000000-OLD0000OLD0000"},
+        ],
+        "snapshots": [
+            snap(1, "messages", "Messages", 0.2, 18_204, 4_810_000_000),
+            snap(2, "app", "Orbit Chat", 0.2, 3_412, 2_210_000_000, bundle="app.demo.chat"),
+            snap(3, "contacts", "Contacts", 3, 214, 18_400_000),
+            snap(4, "app", "Atlas Maps", 9, 960, 864_000_000, bundle="app.demo.atlas"),
+        ],
+    }
+
+
+@app.get("/api/backups")
+async def backups():
+    return _backups()
+
+
+@app.get("/api/devices/{udid}/backup/info")
+async def backup_info(udid: str):
+    return {"will_encrypt": True}
+
+
+@app.post("/api/devices/{udid}/backup")
+@app.post("/api/devices/{udid}/restore")
+async def backup_job(udid: str, request: Request):
+    body = await request.json()
+    restore = request.url.path.endswith("/restore")
+    job = {"id": f"bk{len(DEMO_JOBS)}", "kind": "backup", "action": "restore" if restore else "backup",
+           "title": "Restoring Messages" if restore else "Backing up the iPhone", "status": "running",
+           "phase": "restore" if restore else "backup", "percent": 0.0, "hint": None, "error": None,
+           "started": time.time()}
+    DEMO_JOBS[job["id"]] = job
+    return job
+
+
+@app.get("/api/jobs/{job_id}")
+async def job_state(job_id: str):
+    job = DEMO_JOBS.get(job_id)
+    if not job:
+        return JSONResponse({"detail": "not found"}, status_code=404)
+    job["percent"] = min(100.0, (time.time() - job["started"]) * 2.5)  # 40 s to "finish"
+    if job["percent"] >= 100:
+        job["status"] = "done"
+    return job
+
+
 @app.api_route("/{rest:path}", methods=["GET", "POST"])
 async def anything_else(rest: str):
     """Every other action pretends to succeed (the demo never changes anything)."""

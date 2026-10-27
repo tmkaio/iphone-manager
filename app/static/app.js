@@ -188,6 +188,7 @@ function showView(view = state.view) {
   if (view === "photos") openPhotos();
   if (view === "apps") openApps();
   if (view === "files") openFiles();
+  if (view === "backups") openBackups();
   if (view === "screen") openScreen(); else stopScreen();
   if (view === "update") openUpdate();
 }
@@ -1190,7 +1191,8 @@ function renderTray() {
       el.innerHTML = `<div class="t"><span class="n"></span><span class="p muted"></span></div><div class="bar"><div></div></div><div class="s"></div><div class="a"></div>`;
       tray.appendChild(el);
     }
-    const pct = job.bytes_total ? (job.bytes_done / job.bytes_total) * 100 : (job.total ? (job.done / job.total) * 100 : 0);
+    const pct = job.kind === "backup" ? job.percent || 0
+      : job.bytes_total ? (job.bytes_done / job.bytes_total) * 100 : (job.total ? (job.done / job.total) * 100 : 0);
     $(".bar > div", el).style.width = `${Math.min(100, pct)}%`;
     $(".p", el).textContent = `${Math.floor(pct)}%`;
     const running = job.status === "running" || job.status === "verifying";
@@ -1208,6 +1210,9 @@ function renderTray() {
       } else {
         $(".s", el).textContent = (job.failed?.length ? t("{n} failed", { n: job.failed.length }) + " · " : "") + job.dest;
       }
+    } else if (job.kind === "backup") {
+      $(".n", el).textContent = job.title;
+      $(".s", el).textContent = backupJobText(job);
     } else {
       $(".n", el).textContent = job.status === "verifying" ? t("Verifying IPSW…") : running ? t("Downloading IPSW") : job.status === "done" ? t("IPSW downloaded") : job.status === "cancelled" ? t("Cancelled") : t("Download error");
       $(".s", el).textContent = job.error || t("{done} of {total}", { done: fmtBytes(job.bytes_done), total: fmtBytes(job.bytes_total) }) + (job.speed ? ` · ${fmtBytes(job.speed)}/s` : "");
@@ -1228,6 +1233,11 @@ function renderTray() {
       };
       a.appendChild(b);
     } else {
+      if (job.kind === "backup" && job.status === "done" && job.action === "backup") {
+        const o = document.createElement("button"); o.className = "btn small"; o.textContent = t("Open folder");
+        o.onclick = () => api("/api/open-folder", { json: { path: state.backups?.root || "" } });
+        a.appendChild(o);
+      }
       if (job.kind === "photos" && job.status === "done") {
         const o = document.createElement("button"); o.className = "btn small"; o.textContent = t("Open folder");
         o.onclick = () => api("/api/open-folder", { json: { path: job.dest } });
@@ -1249,6 +1259,7 @@ async function pollJobs() {
       const wasRunning = job.status !== "done";
       Object.assign(job, fresh);
       if (job.kind === "ipsw" && wasRunning && job.status === "done" && state.view === "update") loadFirmwares();
+      if (job.kind === "backup" && job.status !== "running") backupJobEnded(job);
     } catch {}
   }
   renderTray();
@@ -1278,6 +1289,7 @@ async function openApps(force = false) {
   if (state.udid !== udid) return;
   state.apps = r.apps;
   $("#ap-status").textContent = "";
+  await loadBackups(true);
   renderApps();
   // sizes take the iPhone about a minute: fill them in when ready
   while (r.sizes === "computing" && state.appsFor === udid) {
@@ -1322,6 +1334,19 @@ function renderApps() {
       b.onclick = () => { state.fsRoot = `app:${a.bundle}`; state.fsPath = "/"; showView("files"); };
       tr.lastChild.appendChild(b);
     }
+    const bk = document.createElement("button");
+    bk.className = "btn small"; bk.textContent = t("Back up");
+    bk.title = t("Saves this app's data (documents, settings, chats…) to restore it later");
+    bk.onclick = () => startBackup([`app:${a.bundle}`]);
+    tr.lastChild.appendChild(bk);
+    const snap = latestSnapshot((sn) => sn.kind === "app" && sn.bundle === a.bundle);
+    if (snap) {
+      const rs = document.createElement("button");
+      rs.className = "btn small ghost"; rs.textContent = t("Restore…");
+      rs.title = t("Backed up {date}", { date: fmtDate(snap.date) });
+      rs.onclick = () => restoreSnapshot(snap);
+      tr.lastChild.appendChild(rs);
+    }
     const del = document.createElement("button");
     del.className = "btn small ghost danger"; del.textContent = t("Remove");
     del.onclick = () => uninstallApp(a, del);
@@ -1350,6 +1375,252 @@ async function uninstallApp(a, btn) {
 $("#ap-search").oninput = renderApps;
 $("#ap-sort").onchange = renderApps;
 $("#ap-refresh").onclick = () => openApps(true);
+
+/* ---------------- backups ---------------- */
+
+state.backups = null;
+state.backupInfo = {};  // udid -> {will_encrypt}
+const BK_ITEMS = [
+  ["messages", "Messages", "💬"], ["contacts", "Contacts", "👤"], ["call_history", "Call history", "📞"],
+  ["notes", "Notes", "📝"], ["calendar", "Calendar", "📅"], ["safari", "Safari bookmarks", "🔖"],
+];
+const fmtDate = (ts) => new Date(ts * 1000).toLocaleString(LOCALE, { dateStyle: "medium", timeStyle: "short" });
+const latestSnapshot = (pred) => (state.backups?.snapshots || []).find((s) => s.udid === state.udid && pred(s));
+const backupBusy = () => [...state.jobs.values()].some((j) => j.kind === "backup" && j.status === "running");
+
+async function loadBackups(quiet = false) {
+  try {
+    state.backups = await api("/api/backups");
+  } catch (e) {
+    if (!quiet) $("#bk-status").textContent = t("Couldn't read the backups: {error}", { error: e.message });
+  }
+  // a backup started before the page was reloaded: show it in the tray again
+  const job = state.backups?.job;
+  if (job && job.status === "running" && !state.jobs.has(job.id)) { state.jobs.set(job.id, job); renderTray(); }
+}
+
+async function openBackups() {
+  const udid = state.udid;
+  $("#bk-status").textContent = t("Reading backups…");
+  await loadBackups();
+  if (state.udid !== udid) return;
+  $("#bk-status").textContent = "";
+  renderBackups();
+  try { state.backupInfo[udid] = await api(`/api/devices/${udid}/backup/info`); } catch {}
+  if (state.udid === udid && state.view === "backups") renderBackups();
+}
+
+function renderBackups() {
+  const b = state.backups;
+  if (!b) return;
+  $("#bk-where").textContent = t("Saved in {path}", { path: b.root })
+    + (b.free != null ? " · " + t("{size} free", { size: fmtBytes(b.free) }) : "");
+  const mine = b.full.find((f) => f.udid === state.udid);
+  const last = $("#bk-last");
+  last.textContent = mine
+    ? t("Last backup: {date} · iOS {ios} · {size}", { date: fmtDate(mine.date), ios: mine.ios || "?", size: fmtBytes(mine.size) })
+      + (mine.encrypted ? " · " + t("encrypted") : "") + (mine.complete ? "" : " · " + t("didn't finish"))
+    : t("This iPhone hasn't been backed up by this app yet.");
+  last.classList.toggle("muted", !(mine && mine.complete));
+  const busy = backupBusy();
+  $("#bk-full").disabled = busy;
+  $("#bk-full").textContent = mine ? t("Update backup") : t("Back up now");
+  $("#bk-restore-full").disabled = busy || !b.full.some((f) => f.complete);
+  const info = state.backupInfo[state.udid];
+  $("#bk-encrypt").checked = !!info?.will_encrypt;
+  $("#bk-encrypt").disabled = !info || busy;
+
+  const items = $("#bk-items");
+  items.innerHTML = "";
+  for (const [key, name, emoji] of BK_ITEMS) {
+    const row = document.createElement("div");
+    row.className = "bk-item";
+    row.innerHTML = `<span class="bk-emoji"></span><div class="grow"><div class="bk-name"></div><div class="muted small"></div></div>`;
+    row.querySelector(".bk-emoji").textContent = emoji;
+    row.querySelector(".bk-name").textContent = t(name);
+    const snap = latestSnapshot((s) => s.kind === key);
+    row.querySelector(".small").textContent = snap ? t("Backed up {date}", { date: fmtDate(snap.date) })
+      : key === "call_history" && !info?.will_encrypt ? t("Only in encrypted backups") : t("Not backed up yet");
+    const go = document.createElement("button");
+    go.className = "btn small"; go.textContent = t("Back up"); go.disabled = busy;
+    go.onclick = () => startBackup([key]);
+    row.appendChild(go);
+    if (snap) {
+      const rs = document.createElement("button");
+      rs.className = "btn small ghost"; rs.textContent = t("Restore…"); rs.disabled = busy;
+      rs.onclick = () => restoreSnapshot(snap);
+      row.appendChild(rs);
+    }
+    items.appendChild(row);
+  }
+
+  const tbody = $("#bk-table tbody");
+  tbody.innerHTML = "";
+  const rows = [
+    ...b.full.map((f) => ({ ...f, label: t("Entire iPhone"), full: true })),
+    ...b.snapshots.map((s) => ({ ...s, label: s.kind === "app" ? t("App: {name}", { name: s.name }) : t(s.name), full: false })),
+  ];
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="muted"></td></tr>`;
+    tbody.querySelector("td").textContent = t("No backups yet.");
+  }
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><b></b><div class="muted small"></div></td><td></td><td></td><td class="num"></td><td class="act"></td>`;
+    tr.querySelector("b").textContent = r.label;
+    tr.querySelector("div").textContent = [r.encrypted ? t("encrypted") : "", r.full && !r.complete ? t("didn't finish") : "",
+      !r.full && r.files != null ? t("{n} files", { n: r.files }) : ""].filter(Boolean).join(" · ");
+    tr.children[1].textContent = `${(r.full ? r.name : r.device_name) || ""} · iOS ${r.ios || "?"}`;
+    tr.children[2].textContent = fmtDate(r.date);
+    tr.children[3].textContent = fmtBytes(r.size);
+    const act = tr.lastChild;
+    if (r.full ? r.complete : r.udid === state.udid) {
+      const rs = document.createElement("button");
+      rs.className = "btn small"; rs.textContent = t("Restore…"); rs.disabled = busy;
+      rs.onclick = () => r.full ? restoreFull(r) : restoreSnapshot(r);
+      act.appendChild(rs);
+    }
+    const del = document.createElement("button");
+    del.className = "btn small ghost danger"; del.textContent = t("Delete"); del.disabled = busy;
+    del.onclick = async () => {
+      if (!await ask(t("Delete this backup?"), t("{what} from {date} ({size}) is deleted from this computer. The iPhone isn't touched.",
+        { what: r.label, date: fmtDate(r.date), size: fmtBytes(r.size) }), t("Delete"), true)) return;
+      try { await api("/api/backups/delete", { json: { path: r.path, confirm: true } }); await openBackups(); }
+      catch (e) { toast(e.message); }
+    };
+    act.appendChild(del);
+    tbody.appendChild(tr);
+  }
+}
+
+// Password prompt for encrypted backups: resolves to the password, or null if cancelled
+function askPassword(title, body, okLabel = t("Continue")) {
+  const dlg = $("#dlg-pass");
+  $("#pass-title").textContent = title;
+  $("#pass-body").textContent = body;
+  $("#pass-input").value = "";
+  $("#pass-ok").textContent = okLabel;
+  dlg.returnValue = "";
+  dlg.showModal();
+  $("#pass-input").focus();
+  return new Promise((resolve) => {
+    dlg.onclose = () => resolve(dlg.returnValue === "ok" && $("#pass-input").value ? $("#pass-input").value : null);
+  });
+}
+
+// Enter submits the form with its first button (Cancel): make it mean Continue
+$("#pass-input").onkeydown = (e) => {
+  if (e.key === "Enter") { e.preventDefault(); $("#dlg-pass").close("ok"); }
+};
+
+const askBackupPassword = () => askPassword(t("Backup password"),
+  t("This iPhone encrypts its backups. Enter the backup password (the one chosen when encryption was turned on, " +
+    "not the iPhone's passcode)."));
+
+async function startBackup(items) {
+  const udid = state.udid;
+  if (!state.backupInfo[udid]) { try { state.backupInfo[udid] = await api(`/api/devices/${udid}/backup/info`); } catch {} }
+  // partial backups read the (encrypted) backup's file list, which needs the password
+  let password = "";
+  if (items.length && state.backupInfo[udid]?.will_encrypt) {
+    password = await askBackupPassword();
+    if (password === null) return;
+  }
+  const first = !state.backups?.full.some((f) => f.udid === udid);
+  try {
+    const job = await api(`/api/devices/${udid}/backup`, { json: { items, password } });
+    state.jobs.set(job.id, job);
+    renderTray();
+    if (state.view === "backups") renderBackups();
+    toast(first ? t("Keep the iPhone connected and unlocked. The first backup can take a long time; the next ones only copy what changed.")
+      : t("Keep the iPhone connected and unlocked until the backup finishes."), false);
+  } catch (e) { toast(e.message); }
+}
+
+async function startRestore(payload, needsPassword, title, body) {
+  if (!await ask(title, body, t("Restore"), true)) return;
+  let password = "";
+  if (needsPassword) {
+    password = await askBackupPassword();
+    if (password === null) return;
+  }
+  try {
+    const job = await api(`/api/devices/${state.udid}/restore`, { json: { ...payload, password, confirm: true } });
+    state.jobs.set(job.id, job);
+    renderTray();
+    if (state.view === "backups") renderBackups();
+  } catch (e) { toast(e.message); }
+}
+
+function restoreFull(r) {
+  const other = r.udid !== state.udid ? t(" (a backup of another iPhone: {name})", { name: r.name || r.udid }) : "";
+  return startRestore({ source: r.udid }, r.encrypted, t("Restore the entire iPhone?"),
+    t("Everything on {device} is replaced by the backup of {date}, iOS {ios}{other}. Anything newer on the iPhone is lost. " +
+      "Turn off Find My first and keep the cable connected; the iPhone restarts at the end.",
+      { device: current()?.name || "iPhone", date: fmtDate(r.date), ios: r.ios || "?", other }));
+}
+
+function restoreSnapshot(s) {
+  const what = s.kind === "app" ? s.name : t(s.name);
+  return startRestore({ snapshot: s.id }, s.encrypted || !!state.backupInfo[state.udid]?.will_encrypt,
+    t("Restore {what} from {date}?", { what, date: fmtDate(s.date) }),
+    t("{what} goes back to how it was on {date}; what changed in it since then is lost. Everything else stays as it is now: " +
+      "the iPhone is backed up first, then restored with only this part replaced. Turn off Find My first and keep the cable " +
+      "connected; the iPhone restarts at the end.", { what, date: fmtDate(s.date) }));
+}
+
+function backupJobText(job) {
+  const pct = `${Math.floor(job.percent || 0)}%`;
+  if (job.status === "running") {
+    const phase = {
+      start: t("Connecting…"), backup: t("Backing up the iPhone · {pct}", { pct }),
+      snapshot: t("Saving the selected data…"), merge: t("Preparing the restore…"),
+      restore: t("Restoring · {pct} · don't disconnect the iPhone", { pct }),
+    }[job.phase] || "";
+    return phase + (job.hint ? "\n" + job.hint : "");
+  }
+  if (job.status === "done") return job.action === "restore" ? t("Done. The iPhone is restarting to finish.") : t("Backup complete.");
+  if (job.status === "cancelled") return t("Cancelled");
+  return job.error || t("Error");
+}
+
+function backupJobEnded(job) {
+  if (job.ended) return;
+  job.ended = true;
+  loadBackups(true).then(() => {
+    if (state.view === "backups") renderBackups();
+    if (state.view === "apps") renderApps();
+  });
+}
+
+$("#bk-full").onclick = () => startBackup([]);
+$("#bk-restore-full").onclick = () => {
+  const list = (state.backups?.full || []).filter((f) => f.complete);
+  const r = list.find((f) => f.udid === state.udid) || list[0];
+  if (r) restoreFull(r);
+};
+$("#bk-open").onclick = () => state.backups && api("/api/open-folder", { json: { path: state.backups.root } });
+$("#bk-change").onclick = async () => {
+  const { path } = await api("/api/pick/folder", { method: "POST" });
+  if (!path) return;
+  try { await api("/api/backups/folder", { json: { path } }); await openBackups(); } catch (e) { toast(e.message); }
+};
+$("#bk-encrypt").onchange = async (e) => {
+  const enable = e.target.checked;
+  e.target.checked = !enable;  // until the iPhone confirms
+  const pw = enable
+    ? await askPassword(t("Encrypt backups"), t("Choose a password for this iPhone's backups. Keep it safe: without it, " +
+        "encrypted backups can't be restored. The iPhone may ask for its passcode."), t("Turn on"))
+    : await askPassword(t("Turn off encryption"), t("Enter the current backup password. The iPhone may ask for its passcode."),
+        t("Turn off"));
+  if (pw === null) return;
+  e.target.disabled = true;
+  try {
+    state.backupInfo[state.udid] = await api(`/api/devices/${state.udid}/backup/encryption`, { json: { enable, password: pw } });
+    toast(enable ? t("Backup encryption turned on.") : t("Backup encryption turned off."), false);
+  } catch (err) { toast(err.message); }
+  renderBackups();
+};
 
 /* ---------------- files ---------------- */
 

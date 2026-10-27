@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from .device import DeviceManager
 from .firmware import FirmwareManager, inspect_ipsw, signed_firmwares
 from .albums import AlbumLibrary
+from .backups import BackupError, Backups
 from .files import FileBrowser
 from .icloud import ICloudError, ICloudPhotos
 from .photos import PhotoLibrary, _to_jpeg as to_jpeg
@@ -42,6 +43,14 @@ screen = ScreenMirror(devices)
 icloud = ICloudPhotos()
 firmware = FirmwareManager()
 modes = ModeWatcher()
+
+
+def _update_running() -> Optional[str]:
+    job = firmware.update_state()
+    return _("An update is in progress") if job and job["status"] == "running" else None
+
+
+backups = Backups(devices, busy=_update_running)
 
 
 def _resume_modes() -> None:
@@ -131,6 +140,9 @@ def _ensure_no_update() -> None:
     job = firmware.update_state()
     if job and job["status"] == "running":
         raise HTTPException(409, _("An update is in progress"))
+    active = backups.listing_job()
+    if active and active["status"] == "running":
+        raise HTTPException(409, _("Wait for the backup or restore in progress to finish."))
 
 
 @app.post("/api/devices/{udid}/recovery/enter")
@@ -299,7 +311,7 @@ async def delete_photos(udid: str, body: PhotoDeleteBody):
 
 @app.get("/api/jobs/{job_id}")
 async def job_status(job_id: str):
-    job = photos.jobs.get(job_id) or firmware.downloads.get(job_id)
+    job = photos.jobs.get(job_id) or firmware.downloads.get(job_id) or backups.jobs.get(job_id)
     if not job:
         raise HTTPException(404)
     return _public_job(job)
@@ -307,6 +319,9 @@ async def job_status(job_id: str):
 
 @app.post("/api/jobs/{job_id}/cancel")
 async def job_cancel(job_id: str):
+    if job_id in backups.jobs:
+        backups.cancel(job_id)
+        return {"ok": True}
     job = photos.jobs.get(job_id) or firmware.downloads.get(job_id)
     if job:
         job["cancel"] = True
@@ -718,6 +733,97 @@ async def update_status(since: int = 0):
 @app.post("/api/update/cancel")
 async def update_cancel():
     await firmware.cancel_update()
+    return {"ok": True}
+
+
+# ---------------- backups ----------------
+
+
+@app.exception_handler(BackupError)
+async def _backup_error(_req, exc):
+    return JSONResponse({"detail": str(exc)}, status_code=400)
+
+
+@app.get("/api/backups")
+async def backup_list():
+    return await asyncio.to_thread(backups.listing)
+
+
+@app.get("/api/devices/{udid}/backup/info")
+async def backup_info(udid: str):
+    return await backups.device_info(udid)
+
+
+class BackupBody(BaseModel):
+    items: list[str] = []
+    password: str = ""
+
+
+@app.post("/api/devices/{udid}/backup")
+async def backup_start(udid: str, body: BackupBody):
+    await devices.get(udid)
+    return backups.start_backup(udid, body.items, body.password)
+
+
+class RestoreBody(BaseModel):
+    source: Optional[str] = None  # udid folder of a full backup
+    snapshot: Optional[str] = None  # id of a partial backup
+    password: str = ""
+    confirm: bool = False
+
+
+@app.post("/api/devices/{udid}/restore")
+async def backup_restore(udid: str, body: RestoreBody):
+    if not body.confirm:
+        raise HTTPException(400, _("Confirmation required"))
+    await devices.get(udid)
+    if body.snapshot:
+        return backups.start_restore_snapshot(udid, body.snapshot, body.password)
+    return backups.start_restore_full(udid, body.source or udid, body.password)
+
+
+class EncryptionBody(BaseModel):
+    enable: bool
+    password: str
+    old_password: str = ""
+
+
+@app.post("/api/devices/{udid}/backup/encryption")
+async def backup_encryption(udid: str, body: EncryptionBody):
+    _ensure_no_update()
+    if not body.password:
+        raise HTTPException(400, _("Enter the password."))
+    try:
+        await backups.set_encryption(udid, body.enable, body.password, body.old_password)
+    except BackupError:
+        raise
+    except Exception as e:
+        raise HTTPException(502, _("The iPhone refused: {error}", error=f"{type(e).__name__}: {e}"))
+    return await backups.device_info(udid)
+
+
+class BackupDeleteBody(BaseModel):
+    path: str
+    confirm: bool = False
+
+
+@app.post("/api/backups/delete")
+async def backup_delete(body: BackupDeleteBody):
+    if not body.confirm:
+        raise HTTPException(400, _("Confirmation required"))
+    await asyncio.to_thread(backups.delete, body.path)
+    return {"ok": True}
+
+
+class FolderBody(BaseModel):
+    path: str
+
+
+@app.post("/api/backups/folder")
+async def backup_folder(body: FolderBody):
+    if not body.path:
+        raise HTTPException(400)
+    backups.set_root(body.path)
     return {"ok": True}
 
 

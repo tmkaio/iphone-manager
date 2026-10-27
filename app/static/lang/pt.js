@@ -140,4 +140,37 @@ Object.assign((I18N.pt ||= {}), {
   "Verify": "Verificar",
   "Signed in as <b id=\"ic-account\"></b>.": "Conectado como <b id=\"ic-account\"></b>.",
   "Sign out": "Desconectar",
+  // backups
+  "Saves just this part, to bring it back later without touching anything else. For an app's data, use <b>Back up</b> next to the app in Apps.":
+    "Salva só esta parte, para trazê-la de volta depois sem mexer no resto. Para os dados de um app, use <b>Fazer backup</b> ao lado do app em Apps.",
+  "<b>How restoring works.</b> iOS only restores whole backups, so to bring back one app, Messages or Contacts the app first backs up the iPhone as it is now, puts the saved part in place of the current one and restores that: everything else stays as it was. Before restoring, turn off <b>Find My</b> (Settings › your name › Find My) and keep the cable connected; the iPhone restarts at the end. With Messages, Contacts or Notes in iCloud, iCloud syncs its own copy back afterwards.":
+    "<b>Como a restauração funciona.</b> O iOS só restaura backups inteiros. Para trazer de volta um app, as Mensagens ou os Contatos, o app primeiro faz um backup do iPhone como ele está agora, coloca a parte salva no lugar da atual e restaura isso: todo o resto fica como estava. Antes de restaurar, desligue o <b>Buscar</b> (Ajustes › seu nome › Buscar) e mantenha o cabo conectado; o iPhone reinicia no final. Com Mensagens, Contatos ou Notas no iCloud, o iCloud sincroniza a cópia dele depois.",
+  "Backups":
+    "Backups",
+  "Change folder…":
+    "Trocar pasta…",
+  "Entire iPhone":
+    "iPhone inteiro",
+  "Everything on the iPhone: messages, contacts, photos, app data, settings. Same format as iTunes and Finder. After the first one, only what changed is copied. Restore it after a recovery, a failed update or on a new iPhone.":
+    "Tudo no iPhone: mensagens, contatos, fotos, dados dos apps, ajustes. Mesmo formato do iTunes e do Finder. Depois do primeiro, só o que mudou é copiado. Restaure depois de um recovery, de uma atualização que falhou ou num iPhone novo.",
+  "Restore…":
+    "Restaurar…",
+  "Encrypt backups":
+    "Criptografar backups",
+  "(also saves passwords, Health and call history)":
+    "(também salva senhas, Saúde e histórico de chamadas)",
+  "Only some data":
+    "Só alguns dados",
+  "Saved backups":
+    "Backups salvos",
+  "What":
+    "O quê",
+  "iPhone":
+    "iPhone",
+  "Date":
+    "Data",
+  "Encrypted backups also keep saved passwords, Health, call history and Wi-Fi networks":
+    "Backups criptografados também guardam senhas salvas, Saúde, histórico de chamadas e redes Wi-Fi",
+  "Back up the iPhone":
+    "Fazer backup do iPhone",
 });

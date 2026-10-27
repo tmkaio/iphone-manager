@@ -226,4 +226,59 @@ PT: dict[str, str] = {
         "MobileDevice.dll indisponível ({error}); usando libusb",
     "Recovery mode: USB communication through MobileDevice.dll (Apple's driver)":
         "Modo Recovery: comunicação USB pelo MobileDevice.dll (driver da Apple)",
+    # backups
+    "This backup is encrypted: enter its password.":
+        "Este backup é criptografado: digite a senha dele.",
+    "Wrong backup password.":
+        "Senha do backup incorreta.",
+    "Not a backup of this app.":
+        "Não é um backup deste app.",
+    "Wait for the backup or restore in progress to finish.":
+        "Aguarde o backup ou a restauração em andamento terminar.",
+    "A backup or restore is already running.":
+        "Já há um backup ou uma restauração em andamento.",
+    "Enter the iPhone's passcode on the iPhone to continue.":
+        "Digite o código do iPhone no próprio iPhone para continuar.",
+    "The backup was cancelled on the iPhone.":
+        "O backup foi cancelado no iPhone.",
+    "Not enough free space in {path}: the iPhone has {used} of data and the disk has {free} free. Choose another backup folder.":
+        "Espaço livre insuficiente em {path}: o iPhone tem {used} de dados e o disco tem {free} livres. Escolha outra pasta de backup.",
+    "Unknown item: {item}":
+        "Item desconhecido: {item}",
+    "Backing up the iPhone":
+        "Fazendo backup do iPhone",
+    "Backing up {what}":
+        "Fazendo backup de {what}",
+    "Backup not found.":
+        "Backup não encontrado.",
+    "This backup didn't finish; it can't be restored.":
+        "Este backup não terminou; não pode ser restaurado.",
+    "Restoring the backup of {date}":
+        "Restaurando o backup de {date}",
+    "This partial backup is from another iPhone ({name}).":
+        "Este backup parcial é de outro iPhone ({name}).",
+    "Restoring {what}":
+        "Restaurando {what}",
+    "The partial backup and the iPhone's backup aren't both encrypted (or both not): turn backup encryption back to how it was when the partial backup was made.":
+        "O backup parcial e o backup do iPhone não estão os dois criptografados (ou os dois sem criptografia): volte a criptografia dos backups para como estava quando o backup parcial foi feito.",
+    "To restore, connect the iPhone with the USB cable.":
+        "Para restaurar, conecte o iPhone pelo cabo USB.",
+    "Turn off Find My on the iPhone (Settings › your name › Find My) and try again.":
+        "Desligue o Buscar no iPhone (Ajustes › seu nome › Buscar) e tente de novo.",
+    "Enter the password.":
+        "Digite a senha.",
+    "The iPhone refused: {error}":
+        "O iPhone recusou: {error}",
+    "Messages":
+        "Mensagens",
+    "Contacts":
+        "Contatos",
+    "Call history":
+        "Histórico de chamadas",
+    "Notes":
+        "Notas",
+    "Calendar":
+        "Calendário",
+    "Safari bookmarks":
+        "Favoritos do Safari",
 }

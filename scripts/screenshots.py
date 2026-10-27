@@ -44,6 +44,10 @@ SHOTS = [
         const s = document.querySelector('#fs-sort'); s.value = 'size-desc'; s.dispatchEvent(new Event('change'))""", 3),
     ("screen", "en", "document.querySelector('[data-view=screen]').click()", 3),
     ("update", "en", "document.querySelector('[data-view=update]').click()", 3),
+    ("backups", "en", "document.querySelector('[data-view=backups]').click()", 3),
+    ("apps-backup", "en", """document.querySelector('[data-view=apps]').click(); await sleep(1500);
+        document.querySelector('#ap-search').value = 'a'; document.querySelector('#ap-sort').value = 'data-desc';
+        document.querySelector('#ap-sort').dispatchEvent(new Event('change'))""", 3),
     ("overview-pt", "pt", "", 1.5),
     ("photos-pt", "pt", "document.querySelector('[data-view=photos]').click()", 4),
 ]
@@ -104,7 +108,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default="http://127.0.0.1:8790/")
     parser.add_argument("--out", default=str(ROOT / "docs" / "screenshots"))
+    parser.add_argument("--only", nargs="*", help="names of the shots to take (default: all)")
     args = parser.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    if args.only:
+        SHOTS[:] = [s for s in SHOTS if s[0] in args.only]
     asyncio.run(shoot(args.url, out))

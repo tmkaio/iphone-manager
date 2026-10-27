@@ -299,4 +299,107 @@ Object.assign((I18N.pt ||= {}), {
   "Checking": "Verificando",
   "Sending {what} to the iPhone": "Enviando {what} para o iPhone",
   "Updating component ({name})": "Atualizando componente ({name})",
+  // backups
+  " (a backup of another iPhone: {name})":
+    " (um backup de outro iPhone: {name})",
+  "Back up":
+    "Fazer backup",
+  "Back up now":
+    "Fazer backup agora",
+  "Backed up {date}":
+    "Backup em {date}",
+  "Backing up the iPhone · {pct}":
+    "Fazendo backup do iPhone · {pct}",
+  "Backup complete.":
+    "Backup concluído.",
+  "Backup encryption turned off.":
+    "Criptografia dos backups desligada.",
+  "Backup encryption turned on.":
+    "Criptografia dos backups ligada.",
+  "Backup password":
+    "Senha do backup",
+  "Calendar":
+    "Calendário",
+  "Call history":
+    "Histórico de chamadas",
+  "Choose a password for this iPhone's backups. Keep it safe: without it, encrypted backups can't be restored. The iPhone may ask for its passcode.":
+    "Escolha uma senha para os backups deste iPhone. Guarde-a bem: sem ela, backups criptografados não podem ser restaurados. O iPhone pode pedir o código dele.",
+  "Connecting…":
+    "Conectando…",
+  "Contacts":
+    "Contatos",
+  "Couldn't read the backups: {error}":
+    "Não foi possível ler os backups: {error}",
+  "Delete this backup?":
+    "Apagar este backup?",
+  "Done. The iPhone is restarting to finish.":
+    "Pronto. O iPhone está reiniciando para terminar.",
+  "Encrypt backups":
+    "Criptografar backups",
+  "Enter the current backup password. The iPhone may ask for its passcode.":
+    "Digite a senha atual dos backups. O iPhone pode pedir o código dele.",
+  "Entire iPhone":
+    "iPhone inteiro",
+  "Everything on {device} is replaced by the backup of {date}, iOS {ios}{other}. Anything newer on the iPhone is lost. Turn off Find My first and keep the cable connected; the iPhone restarts at the end.":
+    "Tudo no {device} é substituído pelo backup de {date}, iOS {ios}{other}. O que for mais novo no iPhone se perde. Desligue o Buscar antes e mantenha o cabo conectado; o iPhone reinicia no final.",
+  "Keep the iPhone connected and unlocked until the backup finishes.":
+    "Mantenha o iPhone conectado e desbloqueado até o backup terminar.",
+  "Keep the iPhone connected and unlocked. The first backup can take a long time; the next ones only copy what changed.":
+    "Mantenha o iPhone conectado e desbloqueado. O primeiro backup pode demorar bastante; os próximos só copiam o que mudou.",
+  "Last backup: {date} · iOS {ios} · {size}":
+    "Último backup: {date} · iOS {ios} · {size}",
+  "Messages":
+    "Mensagens",
+  "No backups yet.":
+    "Nenhum backup ainda.",
+  "Not backed up yet":
+    "Sem backup ainda",
+  "Notes":
+    "Notas",
+  "Only in encrypted backups":
+    "Só em backups criptografados",
+  "Preparing the restore…":
+    "Preparando a restauração…",
+  "Reading backups…":
+    "Lendo os backups…",
+  "Restore the entire iPhone?":
+    "Restaurar o iPhone inteiro?",
+  "Restore {what} from {date}?":
+    "Restaurar {what} de {date}?",
+  "Restore…":
+    "Restaurar…",
+  "Restoring · {pct} · don't disconnect the iPhone":
+    "Restaurando · {pct} · não desconecte o iPhone",
+  "Safari bookmarks":
+    "Favoritos do Safari",
+  "Saved in {path}":
+    "Salvos em {path}",
+  "Saves this app's data (documents, settings, chats…) to restore it later":
+    "Salva os dados deste app (documentos, ajustes, conversas…) para restaurar depois",
+  "Saving the selected data…":
+    "Salvando os dados escolhidos…",
+  "This iPhone encrypts its backups. Enter the backup password (the one chosen when encryption was turned on, not the iPhone's passcode).":
+    "Este iPhone criptografa os backups. Digite a senha do backup (a escolhida ao ligar a criptografia, não o código do iPhone).",
+  "This iPhone hasn't been backed up by this app yet.":
+    "Este app ainda não fez backup deste iPhone.",
+  "Turn off":
+    "Desligar",
+  "Turn off encryption":
+    "Desligar a criptografia",
+  "Turn on":
+    "Ligar",
+  "Update backup":
+    "Atualizar backup",
+  "didn't finish":
+    "não terminou",
+  "encrypted":
+    "criptografado",
+  "{n} files":
+    "{n} arquivos",
+  "{size} free":
+    "{size} livres",
+  "{what} from {date} ({size}) is deleted from this computer. The iPhone isn't touched.":
+    "{what} de {date} ({size}) é apagado deste computador. O iPhone não é alterado.",
+  "{what} goes back to how it was on {date}; what changed in it since then is lost. Everything else stays as it is now: the iPhone is backed up first, then restored with only this part replaced. Turn off Find My first and keep the cable connected; the iPhone restarts at the end.":
+    "{what} volta a ficar como estava em {date}; o que mudou nele desde então se perde. Todo o resto fica como está agora: primeiro é feito um backup do iPhone, depois ele é restaurado trocando só essa parte. Desligue o Buscar antes e mantenha o cabo conectado; o iPhone reinicia no final.",
 });

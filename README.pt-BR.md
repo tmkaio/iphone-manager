@@ -27,6 +27,7 @@ sem apagar nada, tudo num app local no navegador.
 - **Arquivos:** navega a partição de mídia e os Documentos dos apps. O modo "Todos os arquivos" acha os
   maiores arquivos. Enviar, baixar, criar pasta e apagar.
 - **Tela e controle:** espelha a tela do iPhone e controla o aparelho pelo mouse e teclado.
+- **Backups:** backup completo do iPhone no formato do iTunes/Finder (incremental, com criptografia opcional), para restaurar depois de um recovery ou de uma atualização que falhou. Backup e restauração **dos dados de um app**, das **Mensagens**, dos **Contatos**, do histórico de chamadas, Notas, Calendário ou favoritos do Safari separadamente, sem mexer no resto.
 - **Atualizar iOS:** só versões que a Apple ainda assina, **sem apagar os dados**, depois de 11 verificações de
   segurança.
 - **Idiomas:** inglês e português, escolhidos no rodapé da barra lateral.
@@ -67,6 +68,20 @@ funciona com a Proteção Avançada de Dados ligada.
 ### Tela
 Na primeira vez, o app baixa e monta a imagem de desenvolvedor da Apple (cerca de 17 MB). Ela não altera nada
 no iPhone e some quando ele reinicia. É preciso o iOS 17 ou mais novo, com o **Modo de Desenvolvedor** ligado.
+
+### Backups
+**iPhone inteiro** faz um backup completo, igual ao iTunes ou Finder: o primeiro copia tudo (pode demorar), os
+próximos só o que mudou. Restaure depois de um recovery, de uma atualização que deu errado ou num iPhone novo.
+Ligue **Criptografar backups** para guardar também senhas, Saúde, histórico de chamadas e redes Wi-Fi; sem essa
+senha o backup criptografado não pode ser restaurado.
+
+**Só alguns dados** e o botão **Fazer backup** ao lado de cada app salvam só aquela parte: Mensagens (com
+anexos), Contatos, histórico de chamadas, Notas, Calendário, favoritos do Safari ou os dados de um app. O iOS só
+restaura backups inteiros, então **Restaurar…** faz como o iMazing: faz um backup do iPhone como está agora,
+coloca a parte salva no lugar da atual e restaura esse backup mesclado. Todo o resto volta exatamente como
+estava um minuto antes.
+
+Antes de restaurar, desligue o **Buscar** no iPhone e mantenha o cabo conectado; o iPhone reinicia no final.
 
 ### Atualizar o iOS
 É **atualização, não restauração**: dados, apps e fotos são mantidos. Mantenha o cabo conectado até o fim.

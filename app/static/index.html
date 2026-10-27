@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>iPhone Manager</title>
   <link rel="stylesheet" href="/static/style.css?v=6">
-  <script src="/static/i18n.js?v=6"></script>
-  <script src="/static/lang/pt.js?v=6"></script>
-  <script src="/static/lang/pt.app.js?v=6"></script>
+  <script src="/static/i18n.js?v=8"></script>
+  <script src="/static/lang/pt.js?v=8"></script>
+  <script src="/static/lang/pt.app.js?v=8"></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -36,6 +36,7 @@
       <button data-view="photos"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>Photos &amp; videos</button>
       <button data-view="apps"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Apps</button>
       <button data-view="files"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Files</button>
+      <button data-view="backups"><svg viewBox="0 0 24 24"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Backups</button>
       <button data-view="screen"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>Screen &amp; control</button>
       <button data-view="update"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Update iOS</button>
     </nav>
@@ -71,6 +72,7 @@
         <div class="card2 ov-actions">
           <div class="card-head"><span>Quick actions</span></div>
           <div class="actions">
+            <button class="action" data-go="backups"><svg viewBox="0 0 24 24"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Back up the iPhone</button>
             <button class="action" data-go="update"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Update iOS</button>
             <button class="action" data-go="screen"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>View and control the screen</button>
             <button class="action" data-go="apps"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Manage apps</button>
@@ -97,6 +99,57 @@
             <span class="battery"><span class="battery-fill" id="ov-battery-fill"></span></span>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Backups -->
+    <section id="view-backups" class="view" hidden>
+      <header class="view-head">
+        <h1>Backups</h1>
+        <div class="spacer"></div>
+        <button class="btn ghost" id="bk-open">Open folder</button>
+        <button class="btn ghost" id="bk-change">Change folder…</button>
+      </header>
+      <p class="muted small" id="bk-where"></p>
+
+      <div class="bk-grid">
+        <div class="panel">
+          <h3>Entire iPhone</h3>
+          <p class="muted small">Everything on the iPhone: messages, contacts, photos, app data, settings. Same format as
+            iTunes and Finder. After the first one, only what changed is copied. Restore it after a recovery, a failed
+            update or on a new iPhone.</p>
+          <div id="bk-last" class="bk-last"></div>
+          <div class="row gap">
+            <button class="btn primary" id="bk-full">Back up now</button>
+            <button class="btn" id="bk-restore-full">Restore…</button>
+          </div>
+          <label class="switch-row bk-enc" title="Encrypted backups also keep saved passwords, Health, call history and Wi-Fi networks">
+            <span class="grow">Encrypt backups <span class="muted small">(also saves passwords, Health and call history)</span></span>
+            <span class="switch"><input type="checkbox" id="bk-encrypt"><span></span></span>
+          </label>
+        </div>
+        <div class="panel">
+          <h3>Only some data</h3>
+          <p class="muted small" data-i18n>Saves just this part, to bring it back later without touching anything else. For an
+            app's data, use <b>Back up</b> next to the app in Apps.</p>
+          <div class="bk-items" id="bk-items"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Saved backups</h3>
+        <div id="bk-status" class="status"></div>
+        <table class="tbl" id="bk-table">
+          <thead><tr><th>What</th><th>iPhone</th><th>Date</th><th class="num">Size</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="notice small" data-i18n>
+        <b>How restoring works.</b> iOS only restores whole backups, so to bring back one app, Messages or Contacts
+        the app first backs up the iPhone as it is now, puts the saved part in place of the current one and restores
+        that: everything else stays as it was. Before restoring, turn off <b>Find My</b> (Settings › your name ›
+        Find My) and keep the cable connected; the iPhone restarts at the end. With Messages, Contacts or Notes in
+        iCloud, iCloud syncs its own copy back afterwards.
       </div>
     </section>
 
@@ -420,6 +473,18 @@
     </form>
   </dialog>
 
+  <!-- Backup password -->
+  <dialog id="dlg-pass">
+    <form method="dialog">
+      <h3 id="pass-title"></h3>
+      <p class="muted small" id="pass-body"></p>
+      <div class="pass-wrap">
+        <input type="password" id="pass-input" class="wide" autocomplete="off">
+      </div>
+      <menu><button value="cancel" class="btn ghost">Cancel</button><button value="ok" class="btn primary" id="pass-ok">Continue</button></menu>
+    </form>
+  </dialog>
+
   <!-- Transfer tray -->
   <div id="tray" class="tray" hidden></div>
 
@@ -429,6 +494,6 @@
     for (const [code, name] of Object.entries(LANGS)) langSel.add(new Option(name, code, false, code === LANG));
     langSel.onchange = () => setLang(langSel.value);
   </script>
-  <script src="/static/app.js?v=6"></script>
+  <script src="/static/app.js?v=8"></script>
 </body>
 </html>

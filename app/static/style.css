@@ -363,3 +363,16 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; ma
 .lang-pick svg { fill: none; stroke: currentColor; stroke-width: 1.6; flex-shrink: 0; }
 .lang-pick select { flex: 1; background: var(--side-2); color: var(--side-text); border: 0; border-radius: 6px;
   padding: 4px 6px; font: inherit; }
+
+/* Backups */
+.bk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+.bk-grid .panel { display: flex; flex-direction: column; gap: 10px; }
+.bk-last { font-size: 14px; }
+.bk-enc { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.bk-items { display: flex; flex-direction: column; }
+.bk-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.bk-item:first-child { border-top: 0; }
+.bk-emoji { font-size: 20px; width: 28px; text-align: center; }
+.bk-name { font-weight: 600; }
+#bk-table td.act, #ap-table td.act { white-space: nowrap; }
+#bk-table td.act .btn + .btn, #ap-table td.act .btn + .btn { margin-left: 6px; }

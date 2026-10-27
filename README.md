@@ -23,6 +23,7 @@ English · [Português (Brasil)](README.pt-BR.md)
 | **Delete photos** | Deletes from the iPhone the same way the Windows Photos app does: the iPhone itself removes them, so the library stays consistent. |
 | **Apps** | Every installed app with icon, version, app and data size. Uninstall apps; browse, upload and download the Documents of apps that share files. |
 | **Files** | Browse the iPhone's media partition and app Documents. "All files" mode flattens a folder tree to find the largest files. Upload, download, new folder, delete. |
+| **Backups** | Full iPhone backups in the iTunes/Finder format (incremental, optionally encrypted) that you can restore after a recovery or a failed update. Back up and restore **one app's data**, **Messages**, **Contacts**, call history, Notes, Calendar or Safari bookmarks on their own, without touching anything else. |
 | **Screen & control** | Live mirror of the iPhone's screen. Click to tap, drag to swipe, type with the PC keyboard, hardware buttons (Home, Lock, Volume, Siri). |
 | **Update iOS** | Lists versions Apple still signs, downloads the IPSW (SHA1-checked) and **updates without erasing**, after 11 safety checks. |
 | **Languages** | English and Português (Brasil), switchable at the bottom of the sidebar. [Add yours](#translations). |
@@ -36,6 +37,8 @@ English · [Português (Brasil)](README.pt-BR.md)
 <tr><td align="center">Apps with sizes</td><td align="center">Largest files anywhere on the device</td></tr>
 <tr><td><img src="docs/screenshots/screen.png" alt="Screen mirroring"></td><td><img src="docs/screenshots/update.png" alt="Update iOS"></td></tr>
 <tr><td align="center">Screen mirroring and remote control</td><td align="center">iOS update (keeps your data)</td></tr>
+<tr><td><img src="docs/screenshots/backups.png" alt="Backups"></td><td><img src="docs/screenshots/apps-backup.png" alt="App backups"></td></tr>
+<tr><td align="center">Full and partial backups</td><td align="center">Back up and restore a single app</td></tr>
 <tr><td><img src="docs/screenshots/overview-pt.png" alt="Visão geral"></td><td><img src="docs/screenshots/photos-pt.png" alt="Fotos"></td></tr>
 <tr><td align="center" colspan="2">Em português</td></tr>
 </table>
@@ -91,6 +94,22 @@ The first time, the app downloads Apple's Developer Disk Image for your device (
 It changes nothing on the iPhone and disappears when the iPhone restarts. Then: click = tap, drag = swipe,
 the PC keyboard types on the iPhone. Mirroring stops by itself 90 seconds after nobody is watching.
 
+### Backups
+**Entire iPhone** makes a full backup, the same as iTunes or Finder: the first one copies everything (it can
+take a while), the next ones only what changed. Restore it after a recovery, an update that went wrong, or on a
+new iPhone. Turn on **Encrypt backups** to also keep saved passwords, Health, call history and Wi-Fi networks;
+without that password an encrypted backup can't be restored, so keep it safe.
+
+**Only some data** and the **Back up** button next to each app save just that part: Messages (with
+attachments), Contacts, call history, Notes, Calendar, Safari bookmarks, or one app's data (documents,
+settings, chats, including the app's shared containers). iOS can only restore whole backups, so
+**Restore…** does what iMazing does: it backs up the iPhone as it is now, puts the saved part in place of the
+current one, and restores that merged backup. Everything else comes back exactly as it was a minute earlier.
+
+Before restoring, turn off **Find My** on the iPhone and keep the cable connected; the iPhone restarts at the
+end. If Messages, Contacts or Notes sync with iCloud, iCloud brings its own copy back afterwards. Backups are
+saved in `%LOCALAPPDATA%\iPhoneManager\Backups` (change it with **Change folder…**).
+
 ### Updating iOS
 Only versions Apple still signs and that are the same as or newer than the installed one are offered: it is an
 **update, not a restore**, so data, apps and photos are kept. Before starting, the app checks the USB
@@ -119,6 +138,7 @@ interface (`app/static`). It talks to the device with
 | `app/ptp.py` | Photo deletion over PTP through the Windows Shell, so the iPhone updates its own library. Deleting files from `DCIM` directly would corrupt it. |
 | `app/icloud.py` | iCloud Photos via [pyicloud](https://github.com/timlaing/pyicloud): sign-in with 2FA, CloudKit lookups by the asset id stored in the iPhone's database, downloads and deletion. |
 | `app/video.py` | ffmpeg live conversion of HEVC to H.264 fragmented MP4, with seeking. |
+| `app/backups.py` | mobilebackup2 (iTunes/Finder backup protocol): incremental full backups, restore, encryption. Partial backups are pruned copies of the full backup's `Manifest.db`; restoring one merges it into a fresh backup (hard links, per-file keys rewrapped for encrypted backups) and restores the result. |
 | `app/files.py` | AFC and house_arrest (app Documents), recursive scans, app list and sizes, uninstall. |
 | `app/screen.py`, `app/mirror.py`, `app/mount_ddi.py` | Developer Disk Image mounting and CoreDevice screen streaming + HID input over a userspace RSD tunnel (no admin rights). The HEVC stream is decoded with PyAV and served as MJPEG. |
 | `app/modes.py`, `app/mobiledevice.py` | Apple's `MobileDevice.dll` through ctypes: Recovery/DFU detection, entering and leaving Recovery, starting the device service. |
@@ -176,8 +196,11 @@ Missing entries fall back to English. Placeholders like `{n}` must be kept.
 ## Limitations
 
 - Windows only (it relies on Apple's Windows driver and `MobileDevice.dll`, and on the Windows Shell for deletion).
-- Apple doesn't give computers access to most apps' data. Only apps with *File Sharing* expose their Documents
-  folder, and the Files app's *On My iPhone* folders aren't reachable.
+- Apple doesn't let computers browse most apps' data. Only apps with *File Sharing* expose their Documents
+  folder, and the Files app's *On My iPhone* folders aren't reachable. App data can still be backed up and
+  restored as a whole (Backups).
+- Restoring a single app or Messages restarts the iPhone and needs Find My turned off, because iOS only
+  restores whole backups.
 - Screen mirroring has no audio.
 - iCloud features don't work with Advanced Data Protection.
 
