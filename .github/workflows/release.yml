@@ -99,6 +99,19 @@ jobs:
       - name: Build the .dmg
         run: bash installer/build-unix.sh
 
+      - name: Launch the app from the .dmg
+        run: |
+          hdiutil attach -nobrowse -mountpoint /tmp/ipm dist/*.dmg
+          cp -R "/tmp/ipm/iPhone Manager.app" /tmp/
+          hdiutil detach /tmp/ipm
+          open "/tmp/iPhone Manager.app"
+          for i in $(seq 60); do curl -fs -o /dev/null http://127.0.0.1:8765/ && break; sleep 1; done
+          curl -fs http://127.0.0.1:8765/api/defaults
+          echo
+          curl -s -o /dev/null -w "GET /api/devices -> %{http_code}
+" http://127.0.0.1:8765/api/devices
+          pkill -f "Resources/app/run.py" || true
+
       - name: Notarize
         if: env.HAS_CERT == 'true' && env.HAS_NOTARY == 'true'
         env:
