@@ -136,6 +136,7 @@ Object.assign((I18N.pt ||= {}), {
   "Use the Apple ID this iPhone uses for iCloud: each iPhone has its own account here, and an account whose library doesn't have this iPhone's photos isn't accepted.":
     "Use o Apple ID que este iPhone usa no iCloud: cada iPhone tem a sua própria conta aqui, e uma conta cuja biblioteca não tem as fotos deste iPhone não é aceita.",
   "Password": "Senha",
+  "Back": "Voltar",
   "Show password": "Mostrar senha",
   "Sign in": "Entrar",
   "Enter the 6-digit code shown on your Apple devices.": "Digite o código de 6 dígitos que apareceu nos seus aparelhos Apple.",

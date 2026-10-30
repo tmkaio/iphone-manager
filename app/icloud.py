@@ -114,13 +114,25 @@ class ICloudPhotos:
         with self._lock:
             if self.api is None or self.state != "need_2fa":
                 raise ICloudError(_("Sign in first"))
-            if not self.api.validate_2fa_code(code.strip()):
+            try:
+                valid = self.api.validate_2fa_code(code.strip())
+                if valid and not self.api.is_trusted_session:
+                    self.api.trust_session()  # so later starts don't ask for the code (or the password)
+            except Exception as e:
+                # Apple ended this attempt (e.g. new terms to accept): start over from the password
+                self.state, self.api, self.error = "logged_out", None, _friendly(e)
+                raise ICloudError(self.error)
+            if not valid:
                 self.error = _("Incorrect code")
                 raise ICloudError(self.error)
-            if not self.api.is_trusted_session:
-                self.api.trust_session()  # so later starts don't ask for the code (or the password)
             self.state, self.error = "ok", None
             return self.status()
+
+    def cancel(self) -> None:
+        """Abandons a sign-in waiting for the code: the next one starts from the password."""
+        with self._lock:
+            if self.state == "need_2fa":
+                self.state, self.api, self.error = "logged_out", None, None
 
     def logout(self) -> None:
         with self._lock:
@@ -345,9 +357,20 @@ class ICloudAccounts:
             acc = self._pending.get(udid)
             if acc is None:
                 raise ICloudError(_("Sign in first"))
-            acc.verify(code)
+            try:
+                acc.verify(code)
+            except ICloudError:
+                if acc.state != "need_2fa":
+                    self._pending.pop(udid, None)
+                raise
             self._finish(udid, acc, guids)
             return acc.status()
+
+    def cancel(self, udid: str) -> None:
+        with self._lock:
+            acc = self._pending.pop(udid, None)
+            if acc is not None:
+                acc.cancel()
 
     def _finish(self, udid: str, acc: ICloudPhotos, guids: list[str]) -> None:
         """Signed in from this iPhone: link it, unless the account's library hasn't its photos."""
@@ -388,6 +411,9 @@ def _friendly(e: Exception) -> str:
     name = type(e).__name__
     if "FailedLogin" in name:
         return _("Incorrect Apple ID or password")
+    if "AcceptTerms" in name:
+        return _("This Apple ID has to accept Apple's new iCloud terms first: sign in at icloud.com, accept them, "
+                 "then try again here.")
     if "AccountLocked" in name:
         return _("Account locked by Apple")
     if "ServiceNotActivated" in name or "ADP" in str(e) or "Advanced" in str(e):

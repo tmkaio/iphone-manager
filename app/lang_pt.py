@@ -86,6 +86,8 @@ PT: dict[str, str] = {
         "Código incorreto",
     "{apple_id} isn't this iPhone's iCloud account: its photos aren't in that library.":
         "{apple_id} não é a conta do iCloud deste iPhone: as fotos dele não estão nessa biblioteca.",
+    "This Apple ID has to accept Apple's new iCloud terms first: sign in at icloud.com, accept them, then try again here.":
+        "Este Apple ID precisa aceitar antes os novos termos do iCloud da Apple: entre em icloud.com, aceite e depois tente de novo aqui.",
     "Connect iCloud first":
         "Conecte o iCloud primeiro",
     "This item wasn't found in iCloud":

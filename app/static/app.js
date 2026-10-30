@@ -1151,6 +1151,23 @@ $("#ic-verify").onclick = async () => {
   }
   finally { btn.disabled = false; refreshICloud(); }
 };
+// leaving the code step (Back, Cancel, Esc) abandons that sign-in: the next try starts from the password
+async function icCancelCode() {
+  if (state.icloud.state !== "need_2fa") return;
+  state.icloud = { state: "logged_out" };
+  $("#ic-code").value = "";
+  try { await api(icloudUrl("/cancel"), { method: "POST" }); } catch {}
+}
+$("#ic-back").onclick = async () => {
+  await icCancelCode();
+  icMsg("");
+  icShowStep();
+};
+$("#dlg-icloud").addEventListener("close", async () => {
+  if (state.icloud.state !== "need_2fa") return;
+  await icCancelCode();
+  refreshICloud();
+});
 $("#ic-logout").onclick = async () => {
   await api(icloudUrl("/logout"), { method: "POST" });
   $("#dlg-icloud").close();

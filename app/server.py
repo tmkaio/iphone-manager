@@ -385,6 +385,12 @@ async def icloud_2fa(udid: str, body: ICloudCode):
         raise HTTPException(401, str(e))
 
 
+@app.post("/api/devices/{udid}/icloud/cancel")
+async def icloud_cancel(udid: str):
+    await asyncio.to_thread(icloud.cancel, udid)
+    return {"ok": True}
+
+
 @app.post("/api/devices/{udid}/icloud/logout")
 async def icloud_logout(udid: str):
     await asyncio.to_thread(icloud.logout, udid)
