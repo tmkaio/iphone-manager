@@ -21,7 +21,7 @@ from .firmware import FirmwareManager, inspect_ipsw, signed_firmwares
 from .albums import AlbumLibrary
 from .backups import BackupError, Backups
 from .files import FileBrowser
-from .icloud import ICloudError, ICloudPhotos
+from .icloud import ICloudAccounts, ICloudError
 from .photos import PhotoLibrary, _to_jpeg as to_jpeg
 from .screen import ScreenError, ScreenMirror
 
@@ -40,7 +40,7 @@ photos = PhotoLibrary(devices)
 albums = AlbumLibrary(devices)
 files = FileBrowser(devices)
 screen = ScreenMirror(devices)
-icloud = ICloudPhotos()
+icloud = ICloudAccounts()
 firmware = FirmwareManager()
 # Windows: Apple's MobileDevice.dll (its driver owns Recovery/DFU devices); elsewhere libusb
 modes = ModeWatcher() if system.IS_WINDOWS else UsbModeWatcher()
@@ -334,11 +334,27 @@ def _public_job(job: dict) -> dict:
 
 
 # ---------------- iCloud Photos (items not on the iPhone) ----------------
+# Each iPhone has its own iCloud account (icloud.ICloudAccounts): every route is under the device.
+
+GUID_SAMPLE = 12  # iCloud ids of the iPhone's photos looked up to tell whose library it is
 
 
-@app.get("/api/icloud/status")
-async def icloud_status():
-    return await asyncio.to_thread(icloud.resume)
+async def _device_guids(udid: str) -> list[str]:
+    """iCloud ids of some of the iPhone's photos, spread over its whole library."""
+    try:
+        items = (await albums.library(udid))["items"]
+    except Exception as e:
+        log.warning("iCloud: couldn't read the photo library to check the account (%s)", e)
+        return []
+    guids = [it[5] for it in sorted(items, key=lambda it: it[2]) if it[5]]
+    step = max(1, len(guids) // GUID_SAMPLE)
+    return guids[::step][:GUID_SAMPLE]
+
+
+@app.get("/api/devices/{udid}/icloud/status")
+async def icloud_status(udid: str):
+    guids = await _device_guids(udid) if icloud.needs_check(udid) else []
+    return await asyncio.to_thread(icloud.status, udid, guids)
 
 
 class ICloudLogin(BaseModel):
@@ -346,10 +362,12 @@ class ICloudLogin(BaseModel):
     password: str
 
 
-@app.post("/api/icloud/login")
-async def icloud_login(body: ICloudLogin):
+@app.post("/api/devices/{udid}/icloud/login")
+async def icloud_login(udid: str, body: ICloudLogin):
+    await devices.get(udid)
+    guids = await _device_guids(udid)
     try:
-        return await asyncio.to_thread(icloud.login, body.apple_id.strip(), body.password)
+        return await asyncio.to_thread(icloud.login, udid, body.apple_id.strip(), body.password, guids)
     except ICloudError as e:
         raise HTTPException(401, str(e))
 
@@ -358,17 +376,18 @@ class ICloudCode(BaseModel):
     code: str
 
 
-@app.post("/api/icloud/2fa")
-async def icloud_2fa(body: ICloudCode):
+@app.post("/api/devices/{udid}/icloud/2fa")
+async def icloud_2fa(udid: str, body: ICloudCode):
+    guids = await _device_guids(udid)
     try:
-        return await asyncio.to_thread(icloud.verify, body.code)
+        return await asyncio.to_thread(icloud.verify, udid, body.code, guids)
     except ICloudError as e:
         raise HTTPException(401, str(e))
 
 
-@app.post("/api/icloud/logout")
-async def icloud_logout():
-    await asyncio.to_thread(icloud.logout)
+@app.post("/api/devices/{udid}/icloud/logout")
+async def icloud_logout(udid: str):
+    await asyncio.to_thread(icloud.logout, udid)
     return {"ok": True}
 
 
@@ -382,25 +401,31 @@ async def _icloud(fn, *args):
         raise HTTPException(502, f"iCloud: {type(e).__name__}: {e}")
 
 
-@app.get("/api/icloud/{guid}/info")
-async def icloud_info(guid: str, request: Request):
-    info = await _icloud(icloud.info, guid)
+async def _account(udid: str):
+    return await _icloud(icloud.for_device, udid)
+
+
+@app.get("/api/devices/{udid}/icloud/{guid}/info")
+async def icloud_info(udid: str, guid: str, request: Request):
+    acc = await _account(udid)
+    info = await _icloud(acc.info, guid)
     info.pop("url", None)
-    if info["video"] and await _icloud(icloud.playable_url, guid):
+    if info["video"] and await _icloud(acc.playable_url, guid):
         info["direct"] = True  # the frontend plays /playable as is
     elif info["video"] and video.available():
         try:
-            info.update(await video.probe_url(_icloud_source(request, guid)))
+            info.update(await video.probe_url(_icloud_source(request, udid, guid)))
         except Exception as e:
             log.warning("iCloud video probe failed: %s", e)
     return info
 
 
-@app.get("/api/icloud/{guid}/original")
-async def icloud_original(guid: str, download: bool = False):
+@app.get("/api/devices/{udid}/icloud/{guid}/original")
+async def icloud_original(udid: str, guid: str, download: bool = False):
+    acc = await _account(udid)
     if not download:  # signed URL: the browser streams it with Range support (H.264 videos, images)
-        return RedirectResponse(await _icloud(icloud.original_url, guid))
-    filename, size, chunks = await _icloud(icloud.iter_original, guid)
+        return RedirectResponse(await _icloud(acc.original_url, guid))
+    filename, size, chunks = await _icloud(acc.iter_original, guid)
     headers = {"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"}
     if size:
         headers["Content-Length"] = str(size)
@@ -408,24 +433,27 @@ async def icloud_original(guid: str, download: bool = False):
                              media_type=mimetypes.guess_type(filename)[0] or "application/octet-stream")
 
 
-@app.get("/api/icloud/{guid}/preview")
-async def icloud_preview(guid: str):
+@app.get("/api/devices/{udid}/icloud/{guid}/preview")
+async def icloud_preview(udid: str, guid: str):
     """The original image as JPEG (HEIC/DNG don't display in the browser)."""
-    raw = await _icloud(icloud.read_original, guid)
+    acc = await _account(udid)
+    raw = await _icloud(acc.read_original, guid)
     data = await asyncio.to_thread(to_jpeg, raw, None)
     return Response(data, media_type="image/jpeg", headers={"Cache-Control": "max-age=3600"})
 
 
-@app.get("/api/icloud/{guid}/playable")
-async def icloud_playable(guid: str):
+@app.get("/api/devices/{udid}/icloud/{guid}/playable")
+async def icloud_playable(udid: str, guid: str):
     """A video the browser can play: iCloud's 720p MP4 when there is one, else the original."""
-    return RedirectResponse(await _icloud(icloud.playable_url, guid) or await _icloud(icloud.original_url, guid))
+    acc = await _account(udid)
+    return RedirectResponse(await _icloud(acc.playable_url, guid) or await _icloud(acc.original_url, guid))
 
 
-@app.get("/api/icloud/{guid}/raw")
-async def icloud_raw(guid: str, request: Request):
+@app.get("/api/devices/{udid}/icloud/{guid}/raw")
+async def icloud_raw(udid: str, guid: str, request: Request):
     """The original with Range support, served from icloud's block cache: what ffmpeg reads."""
-    size = (await _icloud(icloud.asset, guid)).size
+    acc = await _account(udid)
+    size = (await _icloud(acc.asset, guid)).size
     headers = {"Accept-Ranges": "bytes"}
     start, end, status = 0, size - 1, 200
     rng = request.headers.get("range")
@@ -435,20 +463,21 @@ async def icloud_raw(guid: str, request: Request):
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
         status = 206
     headers["Content-Length"] = str(end - start + 1)
-    return StreamingResponse(iterate_in_threadpool(icloud.read_range(guid, start, end)), status,
+    return StreamingResponse(iterate_in_threadpool(acc.read_range(guid, start, end)), status,
                              headers=headers, media_type="application/octet-stream")
 
 
-def _icloud_source(request: Request, guid: str) -> str:
-    return f"{str(request.base_url).rstrip('/')}/api/icloud/{quote(guid)}/raw"
+def _icloud_source(request: Request, udid: str, guid: str) -> str:
+    return f"{str(request.base_url).rstrip('/')}/api/devices/{quote(udid)}/icloud/{quote(guid)}/raw"
 
 
-@app.get("/api/icloud/{guid}/video")
-async def icloud_video(guid: str, request: Request, t: float = 0):
+@app.get("/api/devices/{udid}/icloud/{guid}/video")
+async def icloud_video(udid: str, guid: str, request: Request, t: float = 0):
     if not video.available():
         raise HTTPException(501, _("ffmpeg not found in PATH"))
-    await _icloud(icloud.asset, guid)  # a clear error now rather than ffmpeg failing later
-    url = _icloud_source(request, guid)
+    acc = await _account(udid)
+    await _icloud(acc.asset, guid)  # a clear error now rather than ffmpeg failing later
+    url = _icloud_source(request, udid, guid)
     return StreamingResponse(video.stream_url(url, max(0.0, t), gone=request.is_disconnected),
                              media_type="video/mp4", headers={"Cache-Control": "no-store"})
 
@@ -458,14 +487,15 @@ class ICloudDelete(BaseModel):
     confirm: bool = False
 
 
-@app.post("/api/icloud/delete")
-async def icloud_delete(body: ICloudDelete):
+@app.post("/api/devices/{udid}/icloud/delete")
+async def icloud_delete(udid: str, body: ICloudDelete):
     if not body.confirm or not body.guids:
         raise HTTPException(400, _("Confirmation required"))
+    acc = await _account(udid)
     deleted, failed = [], []
     for guid in body.guids:
         try:
-            await asyncio.to_thread(icloud.delete, guid)
+            await asyncio.to_thread(acc.delete, guid)
             deleted.append(guid)
         except Exception as e:
             failed.append({"guid": guid, "error": str(e)})

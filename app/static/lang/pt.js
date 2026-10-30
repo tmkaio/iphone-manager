@@ -133,6 +133,8 @@ Object.assign((I18N.pt ||= {}), {
   "iCloud Photos": "iCloud Fotos",
   "To view, download and delete what is only in iCloud. Your password goes straight to Apple and isn't stored: after the verification code, this computer becomes trusted and the app reconnects by itself. Doesn't work with iCloud Advanced Data Protection turned on.":
     "Para ver, baixar e apagar o que está só no iCloud. A senha vai direto para a Apple e não é guardada: depois do código de verificação, este computador fica confiável e o app reconecta sozinho. Não funciona com a Proteção Avançada de Dados do iCloud ativada.",
+  "Use the Apple ID this iPhone uses for iCloud: each iPhone has its own account here, and an account whose library doesn't have this iPhone's photos isn't accepted.":
+    "Use o Apple ID que este iPhone usa no iCloud: cada iPhone tem a sua própria conta aqui, e uma conta cuja biblioteca não tem as fotos deste iPhone não é aceita.",
   "Password": "Senha",
   "Show password": "Mostrar senha",
   "Sign in": "Entrar",

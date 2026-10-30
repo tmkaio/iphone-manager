@@ -167,6 +167,9 @@ function selectDevice(udid) {
     state.udid = udid;
     state.ecid = d.ecid != null ? String(d.ecid) : null;
     state.items = []; state.filtered = []; state.selected.clear(); state.photosLoadedFor = null;
+    state.icloud = { state: d.mode ? "logged_out" : "checking" };
+    renderICloudBtn();
+    if (!d.mode) refreshICloud();
   }
   renderDevices();
   showView();
@@ -850,7 +853,7 @@ $("#ph-delete").onclick = async () => {
   try {
     if (cloud.length) {
       status.innerHTML = `<span class="spinner"></span> ${t("Deleting {n} item(s) in iCloud…", { n: cloud.length })}`;
-      const r = await api("/api/icloud/delete", { json: { guids: cloud.map((i) => i.guid), confirm: true } });
+      const r = await api(icloudUrl("/delete"), { json: { guids: cloud.map((i) => i.guid), confirm: true } });
       const ok = new Set(r.deleted);
       for (const it of cloud) if (ok.has(it.guid)) { it.flags |= F.TRASHED; done.push(it.path); }
       if (r.failed.length) problems.push(t("{n} from iCloud failed ({error})", { n: r.failed.length, error: r.failed[0].error }));
@@ -881,7 +884,7 @@ function exportItems(items) {
   const cloud = items.filter((i) => i.cloud && i.guid && icloudOk());
   cloud.forEach((it, n) => setTimeout(() => {
     const a = document.createElement("a");
-    a.href = `/api/icloud/${enc(it.guid)}/original?download=true`;
+    a.href = icloudUrl(`/${enc(it.guid)}/original?download=true`);
     document.body.appendChild(a); a.click(); a.remove();
   }, n * 800));
   if (cloud.length) toast(t("Downloading {n} original(s) from iCloud ({size}) to the browser's downloads folder…",
@@ -1015,7 +1018,7 @@ $("#lb-download").onclick = () => {
   const it = state.filtered[lbIdx];
   if (it.cloud && it.guid && icloudOk()) {  // straight from iCloud to the browser's downloads
     const a = document.createElement("a");
-    a.href = `/api/icloud/${enc(it.guid)}/original?download=true`;
+    a.href = icloudUrl(`/${enc(it.guid)}/original?download=true`);
     document.body.appendChild(a); a.click(); a.remove();
     toast(t("Downloading {name} from iCloud ({size}) to the downloads folder…", { name: it.name, size: fmtBytes(it.size) }), false);
     return;
@@ -1027,7 +1030,7 @@ $("#lb-delete").onclick = async () => {
   if (!await ask(t("Delete {name} from iCloud?", { name: it.name }), t("It goes to \"Recently Deleted\" on all your devices " +
       "(recoverable for 30 days in the Photos app or on icloud.com)."), t("Delete from iCloud"), true)) return;
   try {
-    const r = await api("/api/icloud/delete", { json: { guids: [it.guid], confirm: true } });
+    const r = await api(icloudUrl("/delete"), { json: { guids: [it.guid], confirm: true } });
     if (r.failed.length) throw new Error(r.failed[0].error);
     it.flags |= F.TRASHED;  // the Photos database on the iPhone catches up when it syncs
     toast(t("{name} moved to Recently Deleted.", { name: it.name }), false);
@@ -1038,37 +1041,47 @@ $("#lb-delete").onclick = async () => {
 };
 
 /* iCloud: originals of items that are not on the iPhone */
+// each iPhone has its own iCloud account: every iCloud route is under the selected device
 state.icloud = { state: "logged_out" };
 const icloudOk = () => state.icloud.state === "ok";
+const icloudUrl = (path) => `/api/devices/${enc(state.udid)}/icloud${path}`;
 
 function openICloudItem(body, it, idx) {
   const when = new Date(itemTime(it)).toLocaleString(LOCALE);
   $("#lb-name").textContent = `${it.name} · ${t("☁ iCloud original")} · ${fmtBytes(it.size)} · ${when}`;
   $("#lightbox").hidden = false;
-  const g = enc(it.guid);
+  const g = icloudUrl(`/${enc(it.guid)}`);
   if (it.kind === "video") {
-    openVideo(body, idx, { info: `/api/icloud/${g}/info`, stream: (sec) => `/api/icloud/${g}/video?t=${sec}`,
-      direct: `/api/icloud/${g}/playable` });
+    openVideo(body, idx, { info: `${g}/info`, stream: (sec) => `${g}/video?t=${sec}`, direct: `${g}/playable` });
     return;
   }
   body.textContent = t("Downloading the original from iCloud…");
   const img = document.createElement("img");
   // JPEG/PNG/GIF show as they are; HEIC/DNG are converted by the server
-  img.src = /\.(jpe?g|png|gif|webp)$/i.test(it.name) ? `/api/icloud/${g}/original` : `/api/icloud/${g}/preview`;
+  img.src = /\.(jpe?g|png|gif|webp)$/i.test(it.name) ? `${g}/original` : `${g}/preview`;
   img.onload = () => { if (lbIdx === idx) { body.textContent = ""; body.appendChild(img); } };
   img.onerror = () => { if (lbIdx === idx) body.textContent = t("Couldn't open the original in iCloud."); };
 }
 
 async function refreshICloud() {
-  const was = icloudOk();
-  try { state.icloud = await api("/api/icloud/status"); } catch { state.icloud = { state: "logged_out" }; }
-  const b = $("#ic-btn");
-  b.textContent = icloudOk() ? `☁ iCloud: ${state.icloud.apple_id}` : t("☁ Connect iCloud");
-  b.classList.toggle("connected", icloudOk());
+  const was = icloudOk(), udid = state.udid;
+  let st = { state: "logged_out" };
+  if (udid) try { st = await api(icloudUrl("/status")); } catch {}
+  if (udid !== state.udid) return;  // another iPhone was selected meanwhile
+  state.icloud = st;
+  renderICloudBtn();
   if (was !== icloudOk() && state.view === "photos") {  // iCloud items just became (un)selectable
     if (!icloudOk()) state.items?.forEach((i) => i.cloud && state.selected.delete(i.path));
     applyFilter();
   }
+}
+// "checking" while a newly selected iPhone's account is looked up: never another iPhone's account meanwhile
+function renderICloudBtn() {
+  const b = $("#ic-btn"), checking = state.icloud.state === "checking";
+  b.disabled = checking;
+  b.innerHTML = checking ? '<span class="spinner"></span> ' : "";
+  b.append(checking ? t("Checking iCloud…") : icloudOk() ? `☁ iCloud: ${state.icloud.apple_id}` : t("☁ Connect iCloud"));
+  b.classList.toggle("connected", icloudOk());
 }
 // what can be selected (downloaded/deleted): items on the iPhone, and iCloud-only ones once connected
 const selectable = (it) => !it.cloud || (!!it.guid && icloudOk());
@@ -1113,7 +1126,7 @@ $("#ic-login").onclick = async () => {
   if (!$("#ic-id").value.trim() || !$("#ic-pass").value) { icMsg(t("Enter the Apple ID and the password."), "error"); return; }
   btn.disabled = true; icMsg(t("Connecting to Apple…"), "busy");
   try {
-    state.icloud = await api("/api/icloud/login", { json: { apple_id: $("#ic-id").value, password: $("#ic-pass").value } });
+    state.icloud = await api(icloudUrl("/login"), { json: { apple_id: $("#ic-id").value, password: $("#ic-pass").value } });
     $("#ic-pass").value = "";  // not kept anywhere
     $("#ic-pass").type = "password"; $("#ic-eye").classList.remove("on");
     icMsg(state.icloud.state === "need_2fa" ? t("Password accepted.") : "");
@@ -1127,7 +1140,7 @@ $("#ic-verify").onclick = async () => {
   if (!/^\d{6}$/.test($("#ic-code").value.trim())) { icMsg(t("Enter the 6-digit code."), "error"); return; }
   btn.disabled = true; icMsg(t("Verifying the code…"), "busy");
   try {
-    state.icloud = await api("/api/icloud/2fa", { json: { code: $("#ic-code").value } });
+    state.icloud = await api(icloudUrl("/2fa"), { json: { code: $("#ic-code").value } });
     $("#ic-code").value = "";
     $("#dlg-icloud").close();
     toast(t("iCloud connected."), false);
@@ -1139,7 +1152,7 @@ $("#ic-verify").onclick = async () => {
   finally { btn.disabled = false; refreshICloud(); }
 };
 $("#ic-logout").onclick = async () => {
-  await api("/api/icloud/logout", { method: "POST" });
+  await api(icloudUrl("/logout"), { method: "POST" });
   $("#dlg-icloud").close();
   refreshICloud();
 };

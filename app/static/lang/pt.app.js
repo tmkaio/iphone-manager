@@ -182,6 +182,7 @@ Object.assign((I18N.pt ||= {}), {
 
   // iCloud sign-in
   "☁ Connect iCloud": "☁ Conectar iCloud",
+  "Checking iCloud…": "Verificando iCloud…",
   "Hide password": "Esconder senha",
   "Show password": "Mostrar senha",
   "Enter the Apple ID and the password.": "Preencha o Apple ID e a senha.",
