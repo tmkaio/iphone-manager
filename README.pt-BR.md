@@ -6,6 +6,8 @@ sem apagar nada, tudo num app local no navegador.
 
 [English](README.md) · Português (Brasil)
 
+<a href="https://alternativeto.net/software/iphone-manager/about/?utm_source=badge&utm_medium=referral"><img src="https://alternativeto.net/static/badges/badge-compact-color.svg" alt="iPhone Manager | AlternativeTo" width="183" height="59"></a>
+
 ![Visão geral](docs/screenshots/overview-pt.png)
 
 > As imagens vêm do [modo demonstração](#modo-demonstração), com dados fictícios e fotos livres do

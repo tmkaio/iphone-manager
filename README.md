@@ -6,6 +6,8 @@ erasing anything, all from a local app in your browser.
 
 English · [Português (Brasil)](README.pt-BR.md)
 
+<a href="https://alternativeto.net/software/iphone-manager/about/?utm_source=badge&utm_medium=referral"><img src="https://alternativeto.net/static/badges/badge-compact-color.svg" alt="iPhone Manager | AlternativeTo" width="183" height="59"></a>
+
 ![Overview](docs/screenshots/overview.png)
 
 > Screenshots come from the built-in [demo mode](#demo-mode), which uses made-up data and free stock photos
